@@ -127,12 +127,12 @@
     if (nwEl) {
       nwEl.textContent = formatMoney(summary.netWorth);
       nwEl.className =
-        'text-2xl sm:text-3xl font-bold tracking-tight ' +
-        (summary.netWorth >= 0 ? 'text-emerald-600' : 'text-rose-600');
+        'mt-2 text-2xl sm:text-3xl font-bold tracking-tight tabular-nums ' +
+        (summary.netWorth >= 0 ? 'text-white' : 'text-rose-300');
     }
     if (nwSubEl) {
       nwSubEl.textContent =
-        'Solvency: ' + summary.solvencyRatio.toFixed(1) + '% equity share';
+        'Solvency Ratio: ' + summary.solvencyRatio.toFixed(1) + '% net equity ownership';
     }
 
     if (astEl) astEl.textContent = formatMoney(summary.totalAssets);
@@ -173,16 +173,16 @@
         formula: 'Liquid Assets ÷ Short-Term Liabilities',
         valueText:
           summary.shortTermLiabilities === 0 && summary.liquidAssets > 0
-            ? '∞ (Debt-Free ST)'
+            ? '∞ (No ST Debt)'
             : summary.liquidityRatio.toFixed(2) + 'x',
         status:
           summary.liquidityRatio >= 2.0
-            ? { label: 'Healthy', cls: 'bg-emerald-100 text-emerald-800', bar: 'bg-emerald-500' }
+            ? { label: 'Healthy', cls: 'bg-emerald-50 text-emerald-700 border border-emerald-200', bar: 'bg-emerald-500' }
             : summary.liquidityRatio >= 1.0
-            ? { label: 'Moderate', cls: 'bg-amber-100 text-amber-800', bar: 'bg-amber-500' }
-            : { label: 'Caution', cls: 'bg-rose-100 text-rose-800', bar: 'bg-rose-500' },
+            ? { label: 'Moderate', cls: 'bg-amber-50 text-amber-700 border border-amber-200', bar: 'bg-amber-500' }
+            : { label: 'Watch', cls: 'bg-rose-50 text-rose-700 border border-rose-200', bar: 'bg-rose-500' },
         pct: Math.min(100, Math.max(5, (summary.liquidityRatio / 4) * 100)),
-        target: 'Target: ≥ 2.0x coverage'
+        target: 'Benchmark: ≥ 2.0x short-term coverage'
       },
       {
         name: 'Debt-to-Asset Ratio',
@@ -190,82 +190,82 @@
         valueText: summary.debtToAssetRatio.toFixed(1) + '%',
         status:
           summary.debtToAssetRatio <= 35
-            ? { label: 'Healthy', cls: 'bg-emerald-100 text-emerald-800', bar: 'bg-emerald-500' }
+            ? { label: 'Low Leverage', cls: 'bg-emerald-50 text-emerald-700 border border-emerald-200', bar: 'bg-emerald-500' }
             : summary.debtToAssetRatio <= 60
-            ? { label: 'Moderate', cls: 'bg-amber-100 text-amber-800', bar: 'bg-amber-500' }
-            : { label: 'High Leverage', cls: 'bg-rose-100 text-rose-800', bar: 'bg-rose-500' },
+            ? { label: 'Moderate', cls: 'bg-amber-50 text-amber-700 border border-amber-200', bar: 'bg-amber-500' }
+            : { label: 'High Leverage', cls: 'bg-rose-50 text-rose-700 border border-rose-200', bar: 'bg-rose-500' },
         pct: Math.min(100, Math.max(4, summary.debtToAssetRatio)),
-        target: 'Target: ≤ 35.0% leverage'
+        target: 'Benchmark: ≤ 35.0% debt-to-assets'
       },
       {
-        name: 'Solvency (Net Worth) Ratio',
+        name: 'Solvency (Net Equity) Ratio',
         formula: 'Net Worth ÷ Total Assets',
         valueText: summary.solvencyRatio.toFixed(1) + '%',
         status:
           summary.solvencyRatio >= 65
-            ? { label: 'Strong Equity', cls: 'bg-emerald-100 text-emerald-800', bar: 'bg-emerald-500' }
+            ? { label: 'Strong Equity', cls: 'bg-emerald-50 text-emerald-700 border border-emerald-200', bar: 'bg-emerald-500' }
             : summary.solvencyRatio >= 40
-            ? { label: 'Moderate', cls: 'bg-amber-100 text-amber-800', bar: 'bg-amber-500' }
-            : { label: 'Low Equity', cls: 'bg-rose-100 text-rose-800', bar: 'bg-rose-500' },
+            ? { label: 'Moderate', cls: 'bg-amber-50 text-amber-700 border border-amber-200', bar: 'bg-amber-500' }
+            : { label: 'Low Equity', cls: 'bg-rose-50 text-rose-700 border border-rose-200', bar: 'bg-rose-500' },
         pct: Math.min(100, Math.max(0, summary.solvencyRatio)),
-        target: 'Target: ≥ 65.0% net equity'
+        target: 'Benchmark: ≥ 65.0% net equity ownership'
       },
       {
-        name: 'Productive Asset Ratio',
+        name: 'Productive Asset Share',
         formula: 'Productive Assets ÷ Total Assets',
         valueText: summary.productiveAssetRatio.toFixed(1) + '%',
         status:
           summary.productiveAssetRatio >= 50
-            ? { label: 'High Yielding', cls: 'bg-emerald-100 text-emerald-800', bar: 'bg-emerald-500' }
+            ? { label: 'High Yielding', cls: 'bg-emerald-50 text-emerald-700 border border-emerald-200', bar: 'bg-indigo-600' }
             : summary.productiveAssetRatio >= 30
-            ? { label: 'Balanced', cls: 'bg-amber-100 text-amber-800', bar: 'bg-amber-500' }
-            : { label: 'Low Productive Share', cls: 'bg-rose-100 text-rose-800', bar: 'bg-rose-500' },
+            ? { label: 'Balanced', cls: 'bg-amber-50 text-amber-700 border border-amber-200', bar: 'bg-indigo-500' }
+            : { label: 'Low Productive Share', cls: 'bg-rose-50 text-rose-700 border border-rose-200', bar: 'bg-rose-500' },
         pct: Math.min(100, Math.max(0, summary.productiveAssetRatio)),
-        target: 'Target: ≥ 50.0% return-generating'
+        target: 'Benchmark: ≥ 50.0% income-producing'
       },
       {
-        name: 'Weighted Return on Productive Assets',
+        name: 'Weighted Yield on Productive',
         formula: 'Est. Annual Return ÷ Productive Assets',
         valueText: summary.weightedProductiveYield.toFixed(2) + '%',
         status:
           summary.weightedProductiveYield >= 5.0
-            ? { label: 'Strong Return', cls: 'bg-emerald-100 text-emerald-800', bar: 'bg-indigo-500' }
+            ? { label: 'Strong Return', cls: 'bg-emerald-50 text-emerald-700 border border-emerald-200', bar: 'bg-emerald-500' }
             : summary.weightedProductiveYield >= 2.5
-            ? { label: 'Moderate Yield', cls: 'bg-amber-100 text-amber-800', bar: 'bg-indigo-500' }
-            : { label: 'Low Yield', cls: 'bg-slate-100 text-slate-700', bar: 'bg-slate-400' },
+            ? { label: 'Moderate Yield', cls: 'bg-sky-50 text-sky-700 border border-sky-200', bar: 'bg-sky-500' }
+            : { label: 'Conservative', cls: 'bg-slate-100 text-slate-700 border border-slate-200', bar: 'bg-slate-400' },
         pct: Math.min(100, Math.max(5, (summary.weightedProductiveYield / 10) * 100)),
-        target: 'Effective Total Asset Yield: ' + summary.effectiveTotalAssetYield.toFixed(2) + '%'
+        target: 'Effective Total Asset Return: ' + summary.effectiveTotalAssetYield.toFixed(2) + '%'
       },
       {
-        name: 'Asset Liquidity Share',
+        name: 'Liquid Asset Flexibility',
         formula: 'Liquid Assets ÷ Total Assets',
         valueText: summary.liquidToTotalAssetRatio.toFixed(1) + '%',
         status:
           summary.liquidToTotalAssetRatio >= 15
-            ? { label: 'Liquid Buffer OK', cls: 'bg-emerald-100 text-emerald-800', bar: 'bg-sky-500' }
-            : { label: 'Illiquid Heavy', cls: 'bg-amber-100 text-amber-800', bar: 'bg-amber-500' },
+            ? { label: 'Liquid Buffer OK', cls: 'bg-sky-50 text-sky-700 border border-sky-200', bar: 'bg-sky-500' }
+            : { label: 'Illiquid Heavy', cls: 'bg-amber-50 text-amber-700 border border-amber-200', bar: 'bg-amber-500' },
         pct: Math.min(100, Math.max(4, summary.liquidToTotalAssetRatio)),
-        target: 'Recommended: 15%–40% liquid flexibility'
+        target: 'Benchmark: 15%–40% liquid reserves'
       }
     ];
 
     container.innerHTML = ratios
       .map(function (r) {
         return (
-          '<div class="p-4 rounded-xl bg-slate-50/80 border border-slate-200/80 flex flex-col justify-between">' +
+          '<div class="p-4 rounded-xl bg-slate-50/70 hover:bg-white border border-slate-200/80 transition-all flex flex-col justify-between shadow-2xs">' +
             '<div>' +
               '<div class="flex items-start justify-between gap-2">' +
-                '<h4 class="text-xs font-semibold uppercase tracking-wider text-slate-600">' + escapeHtml(r.name) + '</h4>' +
+                '<h4 class="text-xs font-semibold uppercase tracking-wider text-slate-500">' + escapeHtml(r.name) + '</h4>' +
                 '<span class="px-2 py-0.5 text-[11px] font-semibold rounded-full shrink-0 ' + r.status.cls + '">' +
                   escapeHtml(r.status.label) +
                 '</span>' +
               '</div>' +
-              '<div class="mt-2 text-2xl font-bold text-slate-900">' + escapeHtml(r.valueText) + '</div>' +
+              '<div class="mt-2 text-2xl font-bold text-slate-900 tabular-nums">' + escapeHtml(r.valueText) + '</div>' +
               '<div class="text-[11px] text-slate-500 mt-0.5">' + escapeHtml(r.formula) + '</div>' +
             '</div>' +
-            '<div class="mt-3">' +
-              '<div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">' +
-                '<div class="h-full ratio-bar-fill ' + r.status.bar + '" style="width:' + r.pct.toFixed(1) + '%"></div>' +
+            '<div class="mt-3.5">' +
+              '<div class="w-full h-1.5 bg-slate-200/80 rounded-full overflow-hidden">' +
+                '<div class="h-full ratio-bar-fill rounded-full ' + r.status.bar + '" style="width:' + r.pct.toFixed(1) + '%"></div>' +
               '</div>' +
               '<div class="mt-1.5 text-[11px] text-slate-500 font-medium">' + escapeHtml(r.target) + '</div>' +
             '</div>' +
@@ -275,12 +275,13 @@
       .join('');
   }
 
-  function renderAssetsTable() {
+  function renderAssetsTable(summary) {
     const tbody = document.getElementById('assets-table-body');
     if (!tbody) return;
 
     const state = myFinance.Storage.getState();
     const assets = state.assets || [];
+    const totalAssets = summary ? summary.totalAssets : 0;
 
     const filtered = assets.filter(function (a) {
       if (assetCategoryFilter === 'ALL') return true;
@@ -290,38 +291,43 @@
 
     if (filtered.length === 0) {
       tbody.innerHTML =
-        '<tr><td colspan="6" class="py-8 text-center text-slate-400 text-sm">No assets match the selected filter. Use the form above to add an asset.</td></tr>';
+        '<tr><td colspan="6" class="py-10 text-center text-slate-400 text-sm">No assets match the selected filter. Use the entry bar above to add an asset.</td></tr>';
       return;
     }
 
     tbody.innerHTML = filtered
       .map(function (a) {
         const annualReturn = a.productive ? (a.amount * a.returnRate) / 100 : 0;
+        const sharePct = totalAssets > 0 ? ((a.amount / totalAssets) * 100).toFixed(1) + '%' : '0.0%';
+
         const catBadge =
           a.category === 'Liquid'
-            ? '<span class="px-2 py-0.5 rounded-md text-xs font-medium bg-sky-100 text-sky-800">Liquid</span>'
-            : '<span class="px-2 py-0.5 rounded-md text-xs font-medium bg-indigo-100 text-indigo-800">Fixed</span>';
+            ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-sky-50 text-sky-700 border border-sky-200/80"><span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span>Liquid</span>'
+            : '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200/80"><span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>Fixed</span>';
 
         const prodBadge = a.productive
-          ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-emerald-100 text-emerald-800">✓ Productive (' +
+          ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">✓ ' +
             Number(a.returnRate).toFixed(2) +
-            '%)</span>'
+            '% Yield</span>'
           : '<span class="px-2 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-500">Non-Productive</span>';
 
         return (
-          '<tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-colors">' +
-            '<td class="py-3 px-3 text-sm font-medium text-slate-900">' + escapeHtml(a.name) + '</td>' +
+          '<tr class="border-b border-slate-100 hover:bg-indigo-50/30 transition-colors group">' +
+            '<td class="py-3 px-3 text-sm">' +
+              '<div class="font-semibold text-slate-900">' + escapeHtml(a.name) + '</div>' +
+              '<div class="text-[11px] text-slate-400 tabular-nums">' + sharePct + ' of total assets</div>' +
+            '</td>' +
             '<td class="py-3 px-3 text-sm">' + catBadge + '</td>' +
-            '<td class="py-3 px-3 text-sm font-semibold text-right text-slate-900">' + formatMoney(a.amount) + '</td>' +
+            '<td class="py-3 px-3 text-sm font-semibold text-right text-slate-900 tabular-nums">' + formatMoney(a.amount) + '</td>' +
             '<td class="py-3 px-3 text-sm text-center">' + prodBadge + '</td>' +
-            '<td class="py-3 px-3 text-sm text-right font-medium ' +
+            '<td class="py-3 px-3 text-sm text-right font-semibold tabular-nums ' +
               (annualReturn > 0 ? 'text-emerald-600' : 'text-slate-400') +
             '">' +
-              (a.productive ? formatMoney(annualReturn) + '/yr' : '—') +
+              (a.productive ? '+' + formatMoney(annualReturn) + '/yr' : '—') +
             '</td>' +
             '<td class="py-3 px-3 text-right whitespace-nowrap">' +
-              '<button type="button" data-action="edit-asset" data-id="' + escapeHtml(a.id) + '" class="text-xs font-medium text-indigo-600 hover:text-indigo-800 mr-2.5 px-2 py-1 rounded hover:bg-indigo-50">Edit</button>' +
-              '<button type="button" data-action="delete-asset" data-id="' + escapeHtml(a.id) + '" class="text-xs font-medium text-rose-600 hover:text-rose-800 px-2 py-1 rounded hover:bg-rose-50">Delete</button>' +
+              '<button type="button" data-action="edit-asset" data-id="' + escapeHtml(a.id) + '" class="text-xs font-medium text-indigo-600 hover:text-indigo-800 mr-1.5 px-2 py-1 rounded-md hover:bg-indigo-50 transition-colors">Edit</button>' +
+              '<button type="button" data-action="delete-asset" data-id="' + escapeHtml(a.id) + '" class="text-xs font-medium text-rose-600 hover:text-rose-800 px-2 py-1 rounded-md hover:bg-rose-50 transition-colors">Delete</button>' +
             '</td>' +
           '</tr>'
         );
@@ -329,12 +335,13 @@
       .join('');
   }
 
-  function renderLiabilitiesTable() {
+  function renderLiabilitiesTable(summary) {
     const tbody = document.getElementById('liabilities-table-body');
     if (!tbody) return;
 
     const state = myFinance.Storage.getState();
     const liabilities = state.liabilities || [];
+    const totalLiab = summary ? summary.totalLiabilities : 0;
 
     const filtered = liabilities.filter(function (l) {
       if (liabilityCategoryFilter === 'ALL') return true;
@@ -343,28 +350,32 @@
 
     if (filtered.length === 0) {
       tbody.innerHTML =
-        '<tr><td colspan="5" class="py-8 text-center text-slate-400 text-sm">No liabilities match the selected filter. Use the form above to add a liability.</td></tr>';
+        '<tr><td colspan="5" class="py-10 text-center text-slate-400 text-sm">No liabilities match the selected filter. Use the entry bar above to add a liability.</td></tr>';
       return;
     }
 
     tbody.innerHTML = filtered
       .map(function (l) {
+        const sharePct = totalLiab > 0 ? ((l.amount / totalLiab) * 100).toFixed(1) + '%' : '0.0%';
         const catBadge =
           l.category === 'Short-Term'
-            ? '<span class="px-2 py-0.5 rounded-md text-xs font-medium bg-amber-100 text-amber-800">Short-Term</span>'
-            : '<span class="px-2 py-0.5 rounded-md text-xs font-medium bg-rose-100 text-rose-800">Long-Term</span>';
+            ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200/80"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Short-Term</span>'
+            : '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-rose-50 text-rose-800 border border-rose-200/80"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Long-Term</span>';
 
         return (
-          '<tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-colors">' +
-            '<td class="py-3 px-3 text-sm font-medium text-slate-900">' + escapeHtml(l.name) + '</td>' +
+          '<tr class="border-b border-slate-100 hover:bg-rose-50/25 transition-colors group">' +
+            '<td class="py-3 px-3 text-sm">' +
+              '<div class="font-semibold text-slate-900">' + escapeHtml(l.name) + '</div>' +
+              '<div class="text-[11px] text-slate-400 tabular-nums">' + sharePct + ' of total debt</div>' +
+            '</td>' +
             '<td class="py-3 px-3 text-sm">' + catBadge + '</td>' +
-            '<td class="py-3 px-3 text-sm font-semibold text-right text-rose-600">' + formatMoney(l.amount) + '</td>' +
-            '<td class="py-3 px-3 text-sm text-right text-slate-600">' +
-              (l.interestRate ? Number(l.interestRate).toFixed(2) + '%' : '0.00%') +
+            '<td class="py-3 px-3 text-sm font-semibold text-right text-rose-600 tabular-nums">' + formatMoney(l.amount) + '</td>' +
+            '<td class="py-3 px-3 text-sm text-right text-slate-600 tabular-nums">' +
+              (l.interestRate ? Number(l.interestRate).toFixed(2) + '% APR' : '0.00%') +
             '</td>' +
             '<td class="py-3 px-3 text-right whitespace-nowrap">' +
-              '<button type="button" data-action="edit-liability" data-id="' + escapeHtml(l.id) + '" class="text-xs font-medium text-indigo-600 hover:text-indigo-800 mr-2.5 px-2 py-1 rounded hover:bg-indigo-50">Edit</button>' +
-              '<button type="button" data-action="delete-liability" data-id="' + escapeHtml(l.id) + '" class="text-xs font-medium text-rose-600 hover:text-rose-800 px-2 py-1 rounded hover:bg-rose-50">Delete</button>' +
+              '<button type="button" data-action="edit-liability" data-id="' + escapeHtml(l.id) + '" class="text-xs font-medium text-indigo-600 hover:text-indigo-800 mr-1.5 px-2 py-1 rounded-md hover:bg-indigo-50 transition-colors">Edit</button>' +
+              '<button type="button" data-action="delete-liability" data-id="' + escapeHtml(l.id) + '" class="text-xs font-medium text-rose-600 hover:text-rose-800 px-2 py-1 rounded-md hover:bg-rose-50 transition-colors">Delete</button>' +
             '</td>' +
           '</tr>'
         );
@@ -377,8 +388,8 @@
     const summary = computeSummary();
     renderSummaryCards(summary);
     renderRatios(summary);
-    renderAssetsTable();
-    renderLiabilitiesTable();
+    renderAssetsTable(summary);
+    renderLiabilitiesTable(summary);
     if (myFinance.Charts && myFinance.Charts.renderBalanceSheetCharts) {
       myFinance.Charts.renderBalanceSheetCharts(summary, state.assets || []);
     }
@@ -437,7 +448,6 @@
       });
     }
 
-    // Asset Form Submit
     const assetForm = document.getElementById('asset-entry-form');
     if (assetForm) {
       assetForm.addEventListener('submit', function (e) {
@@ -499,7 +509,6 @@
       assetCancelBtn.addEventListener('click', resetAssetForm);
     }
 
-    // Liability Form Submit
     const liabilityForm = document.getElementById('liability-entry-form');
     if (liabilityForm) {
       liabilityForm.addEventListener('submit', function (e) {
@@ -556,12 +565,11 @@
       liabCancelBtn.addEventListener('click', resetLiabilityForm);
     }
 
-    // Filter selects
     const assetFilterSelect = document.getElementById('asset-filter-select');
     if (assetFilterSelect) {
       assetFilterSelect.addEventListener('change', function (e) {
         assetCategoryFilter = e.target.value;
-        renderAssetsTable();
+        renderAssetsTable(computeSummary());
       });
     }
 
@@ -569,11 +577,10 @@
     if (liabFilterSelect) {
       liabFilterSelect.addEventListener('change', function (e) {
         liabilityCategoryFilter = e.target.value;
-        renderLiabilitiesTable();
+        renderLiabilitiesTable(computeSummary());
       });
     }
 
-    // Table Action Delegation
     const assetsTbody = document.getElementById('assets-table-body');
     if (assetsTbody) {
       assetsTbody.addEventListener('click', function (e) {

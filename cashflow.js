@@ -10,8 +10,10 @@
  * - During working years, the remaining amount after the income investment
  *   percentage is all spent: Spent = Income * (1 - Investment%), so Net Cash
  *   Inflow added to Savings = Income * Investment%.
- * - During retirement years, Cash Inflow is Expected Pension and Cash Outflow
- *   is Yearly Spending in Retirement (PV) grown by Expected Inflation Rate.
+ * - At Target Retirement Age (age === retirementAge), the one-time lump-sum
+ *   Expected Pension is added as a cash inflow. During all retirement years
+ *   (age >= retirementAge), Cash Outflow is Yearly Spending in Retirement (PV)
+ *   grown by Expected Inflation Rate.
  * - All remaining Savings after cash inflows and outflows
  *   (RemainingSavings = BeginSavings + NetCashInflowOutflow) are subject to
  *   Yearly Cash Return Rate and Yearly Capital Growth Rate.
@@ -109,9 +111,9 @@
       const beginSavings = currentSavings;
       const inflationFactor = Math.pow(1 + infRate, t);
 
-      // 1. Cash Inflows (Working Income vs. Retirement Expected Pension)
+      // 1. Cash Inflows (Working Income vs. One-Time Lump Sum Expected Pension at Retirement Age)
       const income = isRetired ? 0 : p.yearlyIncome * Math.pow(1 + incGrowth, t);
-      const pension = isRetired ? expectedPension : 0;
+      const pension = age === p.retirementAge ? expectedPension : 0;
 
       // 2. Cash Outflows (Spent Amount)
       // - Working years: remaining amount after income investment percentage is all spent
@@ -122,7 +124,7 @@
 
       // 3. Net Cash Inflow / Outflow into Savings before investment returns
       // - Working: Income - WorkingSpending = activeSavings (Income * invPct)
-      // - Retirement: ExpectedPension - RetirementSpending
+      // - Retirement: LumpSumPension (at age === retirementAge, else 0) - RetirementSpending
       const netInflowOutflow = isRetired ? pension - spending : activeSavings;
 
       // 4. All remaining Savings after cash inflows and outflows are subject to
@@ -138,8 +140,8 @@
       const endSavingsPV = endSavings / Math.pow(1 + infRate, t + 1);
 
       if (age === p.retirementAge) {
-        retirementNestEggNominal = beginSavings;
-        retirementNestEggPV = beginSavings / inflationFactor;
+        retirementNestEggNominal = beginSavings + pension;
+        retirementNestEggPV = (beginSavings + pension) / inflationFactor;
         firstRetirementSpending = inflationAdjustedRetirementSpending;
         firstRetirementPension = pension;
       }
@@ -208,23 +210,23 @@
       retEggSubEl.textContent =
         'At Age ' +
         p.retirementAge +
-        ' • PV: ' +
+        ' (incl. ' + formatMoney(p.expectedPension) + ' pension) • PV: ' +
         formatMoney(forecast.retirementNestEggPV);
     }
 
     if (retSpendEl) retSpendEl.textContent = formatMoney(forecast.firstRetirementSpending) + '/yr';
     if (retSpendSubEl) {
       retSpendSubEl.textContent =
-        'Pension: ' +
+        'Lump-Sum Pension: ' +
         formatMoney(p.expectedPension) +
-        '/yr • Spending PV: ' +
+        ' • Spending PV: ' +
         formatMoney(p.retirementSpendingPV);
     }
 
     if (finalEl) {
       finalEl.textContent = formatMoney(forecast.finalEstateNominal);
       finalEl.className =
-        'text-2xl sm:text-3xl font-bold tracking-tight ' +
+        'mt-2 text-2xl sm:text-3xl font-bold tracking-tight tabular-nums ' +
         (forecast.finalEstateNominal >= 0 ? 'text-indigo-600' : 'text-rose-600');
     }
     if (finalSubEl) {
@@ -235,7 +237,7 @@
     if (statusEl && statusSubEl) {
       if (forecast.depletionAge === null) {
         statusEl.textContent = 'Sustainable ✓';
-        statusEl.className = 'text-2xl sm:text-3xl font-bold tracking-tight text-emerald-600';
+        statusEl.className = 'mt-2 text-2xl sm:text-3xl font-bold tracking-tight tabular-nums text-emerald-600';
         statusSubEl.textContent =
           'Savings last through Age ' +
           p.lifeExpectancy +
@@ -244,7 +246,7 @@
           '% combined return)';
       } else {
         statusEl.textContent = 'Shortfall @ Age ' + forecast.depletionAge;
-        statusEl.className = 'text-2xl sm:text-3xl font-bold tracking-tight text-rose-600';
+        statusEl.className = 'mt-2 text-2xl sm:text-3xl font-bold tracking-tight tabular-nums text-rose-600';
         statusSubEl.textContent =
           'Portfolio turns negative at Age ' +
           forecast.depletionAge +
@@ -280,7 +282,7 @@
 
         const inflowDisplay = r.isRetired
           ? r.pension > 0
-            ? '<span class="text-sky-700" title="Expected Pension">' + formatMoney(r.pension) + '</span>'
+            ? '<span class="text-sky-700" title="One-Time Lump Sum Expected Pension at Retirement Age">' + formatMoney(r.pension) + '</span>'
             : '—'
           : formatMoney(r.income);
 

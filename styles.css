@@ -1,18 +1,24 @@
 /* ==========================================================================
-   myFinance - Custom Stylesheet (styles.css)
-   Compartmentalized styling for Balance Sheet, Cashflow Forecast & Log Panel
+   myFinance - Executive Fintech Design System (styles.css)
+   Inspired by industry-leading wealth platforms (Monarch, ProjectionLab, Kubera)
    ========================================================================== */
 
 :root {
-  --bg-primary: #f8fafc;
-  --bg-card: #ffffff;
+  --bg-canvas: #f4f6fb;
+  --bg-surface: #ffffff;
+  --bg-subtle: #f8fafc;
   --text-primary: #0f172a;
   --text-secondary: #475569;
-  --accent-indigo: #4f46e5;
+  --text-muted: #64748b;
+  --brand-primary: #4f46e5;
+  --brand-primary-hover: #4338ca;
   --accent-emerald: #10b981;
   --accent-rose: #f43f5e;
   --accent-amber: #f59e0b;
-  --border-subtle: #e2e8f0;
+  --accent-sky: #0ea5e9;
+  --border-light: #e2e8f0;
+  --shadow-card: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 4px 12px -2px rgba(15, 23, 42, 0.05);
+  --shadow-card-hover: 0 4px 6px -1px rgba(15, 23, 42, 0.06), 0 10px 20px -4px rgba(15, 23, 42, 0.08);
 }
 
 * {
@@ -21,7 +27,9 @@
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background-color: var(--bg-primary);
+  background-color: var(--bg-canvas);
+  background-image: radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.04) 0px, transparent 50%),
+                    radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.04) 0px, transparent 50%);
   color: var(--text-primary);
   margin: 0;
   padding: 0;
@@ -29,15 +37,20 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Tabular numbers for financial precision */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
 /* Smooth tab transitions */
 .tab-panel {
-  animation: fadeIn 0.22s ease-out;
+  animation: fadeIn 0.24s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
@@ -45,17 +58,67 @@ body {
   }
 }
 
-/* Navigation Tab Active States */
+/* Segmented Pill Navigation Tabs */
 .nav-tab-btn {
   position: relative;
-  transition: all 0.18s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #475569;
+}
+
+.nav-tab-btn:hover:not(.active) {
+  color: #0f172a;
+  background-color: rgba(255, 255, 255, 0.6);
 }
 
 .nav-tab-btn.active {
   color: #4f46e5;
-  background-color: #eef2ff;
-  border-color: #c7d2fe;
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
   font-weight: 600;
+}
+
+/* Fintech Surface Cards */
+.fin-card {
+  background: var(--bg-surface);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 1rem;
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.fin-card-interactive:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* Hero Net Worth Card Gradient */
+.hero-nw-card {
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+  color: #ffffff;
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  box-shadow: 0 10px 25px -5px rgba(30, 27, 75, 0.25);
+}
+
+/* Input group with unit adornment */
+.input-shell {
+  display: flex;
+  align-items: center;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.625rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  overflow: hidden;
+}
+
+.input-shell:focus-within {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.14);
+}
+
+.input-shell input {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
 }
 
 /* Custom Scrollbar for Forecast Table and Run-Time Log */
@@ -102,17 +165,18 @@ body {
   position: sticky;
   top: 0;
   z-index: 10;
+  backdrop-filter: blur(8px);
 }
 
 /* Number Input Clean Spinners */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
-  opacity: 1;
+  opacity: 0.65;
 }
 
 /* Ratio Progress Bar Transitions */
 .ratio-bar-fill {
-  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Toast Notification Animation */

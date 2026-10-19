@@ -117,7 +117,7 @@
         capitalGrowthRate: 6.0,
         inflationRate: 2.5,
         retirementAge: 60,
-        expectedPension: 18000,
+        expectedPension: 250000,
         retirementSpendingPV: 58000,
         lifeExpectancy: 90
       }
@@ -330,7 +330,7 @@
         { Key: 'capitalGrowthRate', Parameter: 'Yearly Capital Growth Rate', Value: p.capitalGrowthRate, Unit: '% per year' },
         { Key: 'inflationRate', Parameter: 'Expected Inflation Rate', Value: p.inflationRate, Unit: '% per year' },
         { Key: 'retirementAge', Parameter: 'Target Retirement Age', Value: p.retirementAge, Unit: 'Years' },
-        { Key: 'expectedPension', Parameter: 'Expected Pension', Value: p.expectedPension, Unit: 'Currency ($/yr)' },
+        { Key: 'expectedPension', Parameter: 'Expected Pension (Lump Sum)', Value: p.expectedPension, Unit: 'Currency ($ Lump Sum at Retirement)' },
         { Key: 'retirementSpendingPV', Parameter: 'Yearly Spending in Retirement (Present Value)', Value: p.retirementSpendingPV, Unit: 'Currency ($)' },
         { Key: 'lifeExpectancy', Parameter: 'Life Expectancy (Age of Decease)', Value: p.lifeExpectancy, Unit: 'Years' }
       ];
@@ -369,7 +369,7 @@
             Phase: r.phase,
             'Beginning Savings ($)': Number(r.beginSavings.toFixed(2)),
             'Yearly Income ($)': Number(r.income.toFixed(2)),
-            'Expected Pension ($)': Number(r.pension.toFixed(2)),
+            'Expected Pension Lump Sum ($)': Number(r.pension.toFixed(2)),
             'Spending Outflow ($)': Number(r.spending.toFixed(2)),
             'Net Cash Inflow / Outflow ($)': Number(r.netInflowOutflow.toFixed(2)),
             'Remaining Savings After Cashflows ($)': Number(r.remainingSavings.toFixed(2)),

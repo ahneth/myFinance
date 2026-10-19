@@ -2,7 +2,7 @@
  * ============================================================================
  * myFinance - Chart.js Visualization Module (charts.js)
  * Renders and updates interactive financial health charts on the Balance Sheet
- * and Yearly Cashflows & Forecast tabs.
+ * and Yearly Cashflows & Forecast tabs with executive fintech styling.
  * ============================================================================
  */
 (function (global) {
@@ -17,6 +17,18 @@
     wealthTrajectory: null,
     cashflowComponents: null,
     incomeVsSpending: null
+  };
+
+  const TOOLTIP_STYLE = {
+    backgroundColor: 'rgba(15, 23, 42, 0.94)',
+    titleColor: '#f8fafc',
+    bodyColor: '#e2e8f0',
+    borderColor: 'rgba(148, 163, 184, 0.2)',
+    borderWidth: 1,
+    padding: 11,
+    cornerRadius: 10,
+    titleFont: { family: 'Inter, sans-serif', size: 12, weight: '600' },
+    bodyFont: { family: 'JetBrains Mono, monospace', size: 11 }
   };
 
   function formatCompactCurrency(val) {
@@ -73,23 +85,31 @@
                 data: total > 0 ? dataValues : [1],
                 backgroundColor:
                   total > 0
-                    ? ['#10b981', '#38bdf8', '#6366f1', '#94a3b8']
+                    ? ['#10b981', '#38bdf8', '#4f46e5', '#94a3b8']
                     : ['#e2e8f0'],
-                borderWidth: 2,
-                borderColor: '#ffffff'
+                borderWidth: 3,
+                borderColor: '#ffffff',
+                hoverOffset: 6
               }
             ]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            cutout: '64%',
+            cutout: '68%',
             plugins: {
               legend: {
                 position: 'bottom',
-                labels: { boxWidth: 12, padding: 12, font: { size: 11 } }
+                labels: {
+                  usePointStyle: true,
+                  pointStyle: 'circle',
+                  boxWidth: 8,
+                  padding: 14,
+                  font: { family: 'Inter, sans-serif', size: 11, weight: '500' },
+                  color: '#475569'
+                }
               },
-              tooltip: {
+              tooltip: Object.assign({}, TOOLTIP_STYLE, {
                 callbacks: {
                   label: function (ctx) {
                     if (total === 0) return 'No assets entered';
@@ -98,7 +118,7 @@
                     return ' ' + ctx.label + ': $' + val.toLocaleString() + ' (' + pct + '%)';
                   }
                 }
-              }
+              })
             }
           }
         });
@@ -127,12 +147,13 @@
                 ],
                 backgroundColor: [
                   '#0ea5e9',
-                  '#6366f1',
+                  '#4f46e5',
                   '#fb7185',
                   '#e11d48',
                   summary.netWorth >= 0 ? '#10b981' : '#f43f5e'
                 ],
-                borderRadius: 6
+                borderRadius: 8,
+                maxBarThickness: 44
               }
             ]
           },
@@ -141,13 +162,13 @@
             maintainAspectRatio: false,
             plugins: {
               legend: { display: false },
-              tooltip: {
+              tooltip: Object.assign({}, TOOLTIP_STYLE, {
                 callbacks: {
                   label: function (ctx) {
                     return ' $' + Number(ctx.parsed.y || 0).toLocaleString();
                   }
                 }
-              }
+              })
             },
             scales: {
               y: {
@@ -156,13 +177,19 @@
                   callback: function (value) {
                     return formatCompactCurrency(value);
                   },
-                  font: { size: 11 }
+                  font: { family: 'JetBrains Mono, monospace', size: 10 },
+                  color: '#64748b'
                 },
-                grid: { color: '#f1f5f9' }
+                grid: { color: '#f1f5f9' },
+                border: { display: false }
               },
               x: {
-                ticks: { font: { size: 11 } },
-                grid: { display: false }
+                ticks: {
+                  font: { family: 'Inter, sans-serif', size: 11, weight: '500' },
+                  color: '#475569'
+                },
+                grid: { display: false },
+                border: { display: false }
               }
             }
           }
@@ -179,7 +206,7 @@
         const prodAssets = assets
           .filter((a) => a.productive && a.amount > 0)
           .map((a) => ({
-            name: a.name.length > 24 ? a.name.slice(0, 22) + '…' : a.name,
+            name: a.name.length > 22 ? a.name.slice(0, 20) + '…' : a.name,
             annualReturn: (a.amount * a.returnRate) / 100,
             rate: a.returnRate
           }))
@@ -194,7 +221,8 @@
                 label: 'Expected Annual Return ($)',
                 data: prodAssets.length ? prodAssets.map((p) => p.annualReturn) : [0],
                 backgroundColor: '#10b981',
-                borderRadius: 6
+                borderRadius: 6,
+                maxBarThickness: 26
               }
             ]
           },
@@ -204,7 +232,7 @@
             maintainAspectRatio: false,
             plugins: {
               legend: { display: false },
-              tooltip: {
+              tooltip: Object.assign({}, TOOLTIP_STYLE, {
                 callbacks: {
                   label: function (ctx) {
                     const item = prodAssets[ctx.dataIndex];
@@ -218,7 +246,7 @@
                     );
                   }
                 }
-              }
+              })
             },
             scales: {
               x: {
@@ -227,13 +255,19 @@
                   callback: function (val) {
                     return formatCompactCurrency(val);
                   },
-                  font: { size: 11 }
+                  font: { family: 'JetBrains Mono, monospace', size: 10 },
+                  color: '#64748b'
                 },
-                grid: { color: '#f1f5f9' }
+                grid: { color: '#f1f5f9' },
+                border: { display: false }
               },
               y: {
-                ticks: { font: { size: 11 } },
-                grid: { display: false }
+                ticks: {
+                  font: { family: 'Inter, sans-serif', size: 11, weight: '500' },
+                  color: '#334155'
+                },
+                grid: { display: false },
+                border: { display: false }
               }
             }
           }
@@ -271,29 +305,34 @@
                 data: rows.map((r) => Math.round(r.endSavings)),
                 borderColor: '#4f46e5',
                 backgroundColor: 'rgba(79, 70, 229, 0.12)',
+                borderWidth: 2.5,
                 fill: true,
-                tension: 0.25,
-                pointRadius: 2
+                tension: 0.3,
+                pointRadius: 1.5,
+                pointHoverRadius: 5
               },
               {
                 label: 'Remaining Savings Pre-Return ($)',
                 data: rows.map((r) => Math.round(r.remainingSavings)),
                 borderColor: '#6366f1',
                 backgroundColor: 'transparent',
+                borderWidth: 1.5,
                 borderDash: [2, 2],
                 fill: false,
-                tension: 0.25,
-                pointRadius: 1.5
+                tension: 0.3,
+                pointRadius: 0
               },
               {
                 label: 'Ending Savings (Inflation-Adjusted PV $)',
                 data: rows.map((r) => Math.round(r.endSavingsPV)),
                 borderColor: '#0d9488',
                 backgroundColor: 'rgba(13, 148, 136, 0.08)',
+                borderWidth: 2,
                 borderDash: [5, 4],
                 fill: true,
-                tension: 0.25,
-                pointRadius: 2
+                tension: 0.3,
+                pointRadius: 1.5,
+                pointHoverRadius: 5
               }
             ]
           },
@@ -304,15 +343,21 @@
             plugins: {
               legend: {
                 position: 'top',
-                labels: { boxWidth: 12, font: { size: 11 } }
+                labels: {
+                  usePointStyle: true,
+                  pointStyle: 'circle',
+                  boxWidth: 8,
+                  font: { family: 'Inter, sans-serif', size: 11, weight: '500' },
+                  color: '#475569'
+                }
               },
-              tooltip: {
+              tooltip: Object.assign({}, TOOLTIP_STYLE, {
                 callbacks: {
                   label: function (ctx) {
                     return ' ' + ctx.dataset.label + ': $' + Number(ctx.parsed.y || 0).toLocaleString();
                   }
                 }
-              }
+              })
             },
             scales: {
               y: {
@@ -320,20 +365,27 @@
                   callback: function (value) {
                     return formatCompactCurrency(value);
                   },
-                  font: { size: 11 }
+                  font: { family: 'JetBrains Mono, monospace', size: 10 },
+                  color: '#64748b'
                 },
-                grid: { color: '#f1f5f9' }
+                grid: { color: '#f1f5f9' },
+                border: { display: false }
               },
               x: {
-                ticks: { maxTicksLimit: 12, font: { size: 10 } },
-                grid: { display: false }
+                ticks: {
+                  maxTicksLimit: 10,
+                  font: { family: 'Inter, sans-serif', size: 10 },
+                  color: '#64748b'
+                },
+                grid: { display: false },
+                border: { display: false }
               }
             }
           }
         });
       }
 
-      // 2. Yearly Cashflows Breakdown (Invested Salary / Pension + Cash Return + Capital Growth vs Retirement Net Outflow)
+      // 2. Yearly Cashflows Breakdown
       const ctxComp = document.getElementById('chart-cashflow-components');
       if (ctxComp) {
         if (instances.cashflowComponents) {
@@ -349,31 +401,36 @@
                 label: 'Invested Salary ($)',
                 data: rows.map((r) => Math.round(r.activeSavings)),
                 backgroundColor: '#3b82f6',
-                stack: 'cashflows'
+                stack: 'cashflows',
+                borderRadius: 2
               },
               {
-                label: 'Expected Pension ($)',
+                label: 'Expected Pension Lump Sum ($)',
                 data: rows.map((r) => Math.round(r.pension)),
                 backgroundColor: '#0ea5e9',
-                stack: 'cashflows'
+                stack: 'cashflows',
+                borderRadius: 2
               },
               {
                 label: 'Cash Return Yield ($)',
                 data: rows.map((r) => Math.round(r.cashReturn)),
                 backgroundColor: '#10b981',
-                stack: 'cashflows'
+                stack: 'cashflows',
+                borderRadius: 2
               },
               {
                 label: 'Capital Growth ($)',
                 data: rows.map((r) => Math.round(r.capitalGrowth)),
                 backgroundColor: '#8b5cf6',
-                stack: 'cashflows'
+                stack: 'cashflows',
+                borderRadius: 2
               },
               {
                 label: 'Retirement Spending Outflow ($)',
                 data: rows.map((r) => (r.isRetired ? -Math.round(r.spending) : 0)),
                 backgroundColor: '#f43f5e',
-                stack: 'cashflows'
+                stack: 'cashflows',
+                borderRadius: 2
               }
             ]
           },
@@ -384,22 +441,33 @@
             plugins: {
               legend: {
                 position: 'top',
-                labels: { boxWidth: 10, font: { size: 10 } }
+                labels: {
+                  usePointStyle: true,
+                  pointStyle: 'circle',
+                  boxWidth: 8,
+                  font: { family: 'Inter, sans-serif', size: 10, weight: '500' },
+                  color: '#475569'
+                }
               },
-              tooltip: {
+              tooltip: Object.assign({}, TOOLTIP_STYLE, {
                 callbacks: {
                   label: function (ctx) {
                     const v = Number(ctx.parsed.y || 0);
                     return ' ' + ctx.dataset.label + ': $' + v.toLocaleString();
                   }
                 }
-              }
+              })
             },
             scales: {
               x: {
                 stacked: true,
-                ticks: { maxTicksLimit: 12, font: { size: 10 } },
-                grid: { display: false }
+                ticks: {
+                  maxTicksLimit: 10,
+                  font: { family: 'Inter, sans-serif', size: 10 },
+                  color: '#64748b'
+                },
+                grid: { display: false },
+                border: { display: false }
               },
               y: {
                 stacked: true,
@@ -407,9 +475,11 @@
                   callback: function (value) {
                     return formatCompactCurrency(value);
                   },
-                  font: { size: 11 }
+                  font: { family: 'JetBrains Mono, monospace', size: 10 },
+                  color: '#64748b'
                 },
-                grid: { color: '#f1f5f9' }
+                grid: { color: '#f1f5f9' },
+                border: { display: false }
               }
             }
           }
@@ -429,12 +499,12 @@
             labels: rows.map((r) => 'Age ' + r.age),
             datasets: [
               {
-                label: 'Active Income / Pension ($)',
+                label: 'Active Income + Pension Lump Sum ($)',
                 data: rows.map((r) => Math.round(r.income + r.pension)),
                 borderColor: '#0284c7',
                 backgroundColor: 'transparent',
-                borderWidth: 2,
-                tension: 0.2,
+                borderWidth: 2.2,
+                tension: 0.25,
                 pointRadius: 1.5
               },
               {
@@ -442,9 +512,9 @@
                 data: rows.map((r) => Math.round(r.spending)),
                 borderColor: '#e11d48',
                 backgroundColor: 'rgba(225, 29, 72, 0.08)',
-                borderWidth: 2,
+                borderWidth: 2.2,
                 fill: true,
-                tension: 0.2,
+                tension: 0.25,
                 pointRadius: 1.5
               },
               {
@@ -452,9 +522,9 @@
                 data: rows.map((r) => Math.round(r.cashReturn + r.capitalGrowth)),
                 borderColor: '#10b981',
                 backgroundColor: 'transparent',
-                borderWidth: 2,
+                borderWidth: 2.2,
                 borderDash: [4, 3],
-                tension: 0.2,
+                tension: 0.25,
                 pointRadius: 1.5
               }
             ]
@@ -466,15 +536,21 @@
             plugins: {
               legend: {
                 position: 'top',
-                labels: { boxWidth: 12, font: { size: 11 } }
+                labels: {
+                  usePointStyle: true,
+                  pointStyle: 'circle',
+                  boxWidth: 8,
+                  font: { family: 'Inter, sans-serif', size: 11, weight: '500' },
+                  color: '#475569'
+                }
               },
-              tooltip: {
+              tooltip: Object.assign({}, TOOLTIP_STYLE, {
                 callbacks: {
                   label: function (ctx) {
                     return ' ' + ctx.dataset.label + ': $' + Number(ctx.parsed.y || 0).toLocaleString();
                   }
                 }
-              }
+              })
             },
             scales: {
               y: {
@@ -483,13 +559,20 @@
                   callback: function (value) {
                     return formatCompactCurrency(value);
                   },
-                  font: { size: 11 }
+                  font: { family: 'JetBrains Mono, monospace', size: 10 },
+                  color: '#64748b'
                 },
-                grid: { color: '#f1f5f9' }
+                grid: { color: '#f1f5f9' },
+                border: { display: false }
               },
               x: {
-                ticks: { maxTicksLimit: 12, font: { size: 10 } },
-                grid: { display: false }
+                ticks: {
+                  maxTicksLimit: 10,
+                  font: { family: 'Inter, sans-serif', size: 10 },
+                  color: '#64748b'
+                },
+                grid: { display: false },
+                border: { display: false }
               }
             }
           }
