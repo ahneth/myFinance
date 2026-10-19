@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>myFinance — Personal Balance Sheet &amp; Yearly Cashflow Forecast</title>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- SheetJS (xlsx) CDN for Excel Backup & Restore -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Compartmentalized Stylesheet -->
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body class="min-h-screen flex flex-col bg-slate-50 text-slate-900">
+
+  <!-- Top Navigation & Data Action Bar -->
+  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <!-- Brand Title -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-sm">
+          mF
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg sm:text-xl font-bold tracking-tight text-slate-900">myFinance</h1>
+            <span class="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+              Local Storage
+            </span>
+            <span id="header-error-badge" class="hidden px-2 py-0.5 text-[11px] font-semibold rounded-full bg-rose-100 text-rose-700 border border-rose-300">
+              0 Errors
+            </span>
+          </div>
+          <p id="storage-status-text" class="text-xs text-slate-500">Data stored locally on device</p>
+        </div>
+      </div>
+
+      <!-- Primary Navigation Tabs -->
+      <nav class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200" aria-label="Main Tabs">
+        <button
+          type="button"
+          id="tab-btn-balance-sheet"
+          class="nav-tab-btn active px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-700 border border-transparent"
+        >
+          1) Balance Sheet
+        </button>
+        <button
+          type="button"
+          id="tab-btn-cashflow"
+          class="nav-tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-700 border border-transparent"
+        >
+          2) Yearly Cashflows &amp; Forecast
+        </button>
+        <button
+          type="button"
+          id="btn-jump-logs"
+          class="px-3 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-white/60 transition-colors"
+          title="Jump to Run-Time Log &amp; Error Diagnostics at bottom of page"
+        >
+          Run-Time Log ↓
+        </button>
+      </nav>
+
+      <!-- Backup / Restore Excel & Data Controls -->
+      <div class="flex items-center gap-2 no-print">
+        <input
+          type="file"
+          id="excel-file-input"
+          accept=".xlsx,.xls"
+          class="hidden"
+        />
+        <button
+          type="button"
+          id="btn-export-excel"
+          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-colors"
+        >
+          <span>⬇ Export Excel (.xlsx)</span>
+        </button>
+        <button
+          type="button"
+          id="btn-import-excel"
+          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-colors"
+        >
+          <span>⬆ Import Excel (.xlsx)</span>
+        </button>
+        <button
+          type="button"
+          id="btn-open-reset-modal"
+          class="inline-flex items-center gap-1 px-2.5 py-2 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-colors"
+        >
+          Reset Data
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-8">
+
+    <!-- ===================================================================
+         TAB 1: BALANCE SHEET
+         =================================================================== -->
+    <section id="panel-balance-sheet" class="tab-panel space-y-6">
+      <!-- Top KPI Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm">
+          <div class="text-xs font-semibold uppercase tracking-wider text-slate-500">Net Worth</div>
+          <div id="bs-kpi-net-worth" class="mt-2 text-2xl sm:text-3xl font-bold tracking-tight text-emerald-600">$0</div>
+          <div id="bs-kpi-net-worth-sub" class="mt-1 text-xs text-slate-500">Total Assets minus Total Liabilities</div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm">
+          <div class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Assets</div>
+          <div id="bs-kpi-total-assets" class="mt-2 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">$0</div>
+          <div id="bs-kpi-assets-sub" class="mt-1 text-xs text-slate-500">Liquid &amp; Fixed Assets</div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm">
+          <div class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Liabilities</div>
+          <div id="bs-kpi-total-liabilities" class="mt-2 text-2xl sm:text-3xl font-bold tracking-tight text-rose-600">$0</div>
+          <div id="bs-kpi-liabilities-sub" class="mt-1 text-xs text-slate-500">Short-Term &amp; Long-Term Debt</div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm">
+          <div class="text-xs font-semibold uppercase tracking-wider text-slate-500">Productive Asset Return</div>
+          <div id="bs-kpi-productive-return" class="mt-2 text-2xl sm:text-3xl font-bold tracking-tight text-indigo-600">$0/yr</div>
+          <div id="bs-kpi-productive-sub" class="mt-1 text-xs text-slate-500">Annual passive return from productive assets</div>
+        </div>
+      </div>
+
+      <!-- Assets & Liabilities Data Entry + Tables -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Assets Card -->
+        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 flex flex-col">
+          <div class="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-100">
+            <div>
+              <h2 class="text-base font-bold text-slate-900">Assets (Liquid &amp; Fixed)</h2>
+              <p class="text-xs text-slate-500">Flag productive assets and assign expected yearly return rates (%)</p>
+            </div>
+            <select
+              id="asset-filter-select"
+              aria-label="Filter Assets"
+              class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 text-slate-700 font-medium"
+            >
+              <option value="ALL">All Assets</option>
+              <option value="Liquid">Liquid Only</option>
+              <option value="Fixed">Fixed Only</option>
+              <option value="PRODUCTIVE">Productive Only</option>
+            </select>
+          </div>
+
+          <!-- Add / Edit Asset Form -->
+          <form id="asset-entry-form" class="mt-4 grid grid-cols-1 sm:grid-cols-12 gap-2.5 bg-slate-50 p-3.5 rounded-xl border border-slate-200/70">
+            <div class="sm:col-span-4">
+              <label for="asset-name-input" class="block text-[11px] font-semibold text-slate-600 mb-1">Asset Name</label>
+              <input
+                type="text"
+                id="asset-name-input"
+                placeholder="e.g. S&amp;P 500 ETF"
+                required
+                class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 focus:outline-none focus:border-indigo-500 bg-white"
+              />
+            </div>
+
+            <div class="sm:col-span-3">
+              <label for="asset-category-input" class="block text-[11px] font-semibold text-slate-600 mb-1">Category</label>
+              <select
+                id="asset-category-input"
+                class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 focus:outline-none focus:border-indigo-500 bg-white"
+              >
+                <option value="Liquid">Liquid</option>
+                <option value="Fixed">Fixed</option>
+              </select>
+            </div>
+
+            <div class="sm:col-span-3">
+              <label for="asset-amount-input" class="block text-[11px] font-semibold text-slate-600 mb-1">Amount ($)</label>
+              <input
+                type="number"
+                id="asset-amount-input"
+                placeholder="50000"
+                min="0"
+                step="any"
+                required
+                class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 focus:outline-none focus:border-indigo-500 bg-white"
+              />
+            </div>
+
+            <div class="sm:col-span-2">
+              <label for="asset-return-input" class="block text-[11px] font-semibold text-slate-600 mb-1">Return (%/yr)</label>
+              <input
+                type="number"
+                id="asset-return-input"
+                value="5.0"
+                step="0.1"
+                class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 focus:outline-none focus:border-indigo-500 bg-white disabled:bg-slate-100 disabled:text-slate-400"
+              />
+            </div>
+
+            <div class="sm:col-span-12 flex flex-wrap items-center justify-between gap-2 pt-1">
+              <label class="inline-flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  id="asset-productive-input"
+                  checked
+                  class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4"
+                />
+                <span>Productive Asset (generates yearly return)</span>
+              </label>
+
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  id="asset-cancel-btn"
+                  class="hidden px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-200 text-slate-700 hover:bg-slate-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  id="asset-submit-btn"
+                  class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+                >
+                  + Add Asset
+                </button>
+              </div>
+            </div>
+          </form>
+
+          <!-- Assets Table -->
+          <div class="mt-4 overflow-x-auto custom-scrollbar flex-1">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wider text-slate-500 bg-slate-50/60">
+                  <th class="py-2.5 px-3">Asset Item</th>
+                  <th class="py-2.5 px-3">Type</th>
+                  <th class="py-2.5 px-3 text-right">Amount</th>
+                  <th class="py-2.5 px-3 text-center">Productivity</th>
+                  <th class="py-2.5 px-3 text-right">Yearly Return</th>
+                  <th class="py-2.5 px-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="assets-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Liabilities Card -->
+        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 flex flex-col">
+          <div class="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-100">
+            <div>
+              <h2 class="text-base font-bold text-slate-900">Liabilities (Short-Term &amp; Long-Term)</h2>
+              <p class="text-xs text-slate-500">Track short-term obligations (&lt;1 yr) and long-term debt (&gt;1 yr)</p>
+            </div>
+            <select
+              id="liability-filter-select"
+              aria-label="Filter Liabilities"
+              class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 text-slate-700 font-medium"
+            >
+              <option value="ALL">All Liabilities</option>
+              <option value="Short-Term">Short-Term Only</option>
+              <option value="Long-Term">Long-Term Only</option>
+            </select>
+          </div>
+
+          <!-- Add / Edit Liability Form -->
+          <form id="liability-entry-form" class="mt-4 grid grid-cols-1 sm:grid-cols-12 gap-2.5 bg-slate-50 p-3.5 rounded-xl border border-slate-200/70">
+            <div class="sm:col-span-4">
+              <label for="liability-name-input" class="block text-[11px] font-semibold text-slate-600 mb-1">Liability Name</label>
+              <input
+                type="text"
+                id="liability-name-input"
+                placeholder="e.g. Home Mortgage"
+                required
+                class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 focus:outline-none focus:border-indigo-500 bg-white"
+              />
+            </div>
+
+            <div class="sm:col-span-3">
+              <label for="liability-category-input" class="block text-[11px] font-semibold text-slate-600 mb-1">Horizon</label>
+              <select
+                id="liability-category-input"
+                class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 focus:outline-none focus:border-indigo-500 bg-white"
+              >
+                <option value="Short-Term">Short-Term</option>
+                <option value="Long-Term">Long-Term</option>
+              </select>
+            </div>
+
+            <div class="sm:col-span-3">
+              <label for="liability-amount-input" class="block text-[11px] font-semibold text-slate-600 mb-1">Balance ($)</label>
+              <input
+                type="number"
+                id="liability-amount-input"
+                placeholder="25000"
+                min="0"
+                step="any"
+                required
+                class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 focus:outline-none focus:border-indigo-500 bg-white"
+              />
+            </div>
+
+            <div class="sm:col-span-2">
+              <label for="liability-rate-input" class="block text-[11px] font-semibold text-slate-600 mb-1">Interest (%)</label>
+              <input
+                type="number"
+                id="liability-rate-input"
+                value="0.0"
+                min="0"
+                step="0.1"
+                class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 focus:outline-none focus:border-indigo-500 bg-white"
+              />
+            </div>
+
+            <div class="sm:col-span-12 flex items-center justify-end gap-2 pt-1">
+              <button
+                type="button"
+                id="liability-cancel-btn"
+                class="hidden px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-200 text-slate-700 hover:bg-slate-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                id="liability-submit-btn"
+                class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white shadow-sm"
+              >
+                + Add Liability
+              </button>
+            </div>
+          </form>
+
+          <!-- Liabilities Table -->
+          <div class="mt-4 overflow-x-auto custom-scrollbar flex-1">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wider text-slate-500 bg-slate-50/60">
+                  <th class="py-2.5 px-3">Liability Item</th>
+                  <th class="py-2.5 px-3">Category</th>
+                  <th class="py-2.5 px-3 text-right">Amount</th>
+                  <th class="py-2.5 px-3 text-right">Interest</th>
+                  <th class="py-2.5 px-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="liabilities-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Financial Health Ratios Scorecard -->
+      <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5">
+        <div class="pb-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Financial Health Ratios &amp; Benchmarks</h2>
+            <p class="text-xs text-slate-500">Key liquidity, solvency, leverage, and asset productivity indicators calculated from your Balance Sheet</p>
+          </div>
+        </div>
+        <div id="bs-ratios-grid" class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      </div>
+
+      <!-- Balance Sheet Visualizations (Charts) -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5">
+          <h3 class="text-sm font-bold text-slate-900">Asset Allocation &amp; Productivity</h3>
+          <p class="text-xs text-slate-500 mb-3">Liquid vs. Fixed and Productive vs. Non-Productive</p>
+          <div class="relative h-72">
+            <canvas id="chart-asset-allocation"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5">
+          <h3 class="text-sm font-bold text-slate-900">Balance Sheet Structure</h3>
+          <p class="text-xs text-slate-500 mb-3">Assets, Debt Horizons, and Net Worth</p>
+          <div class="relative h-72">
+            <canvas id="chart-balance-structure"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5">
+          <h3 class="text-sm font-bold text-slate-900">Productive Asset Annual Returns</h3>
+          <p class="text-xs text-slate-500 mb-3">Projected yearly return ($) per productive asset</p>
+          <div class="relative h-72">
+            <canvas id="chart-productive-yield"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         TAB 2: YEARLY CASHFLOWS AND FORECAST
+         =================================================================== -->
+    <section id="panel-cashflow" class="tab-panel hidden space-y-6">
+      <!-- Forecast KPI Summary Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm">
+          <div class="text-xs font-semibold uppercase tracking-wider text-slate-500">Retirement Nest Egg</div>
+          <div id="cf-kpi-ret-nest-egg" class="mt-2 text-2xl sm:text-3xl font-bold tracking-tight text-indigo-600">$0</div>
+          <div id="cf-kpi-ret-nest-egg-sub" class="mt-1 text-xs text-slate-500">Projected savings at target retirement age</div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm">
+          <div class="text-xs font-semibold uppercase tracking-wider text-slate-500">1st-Yr Retirement Spending</div>
+          <div id="cf-kpi-ret-spending" class="mt-2 text-2xl sm:text-3xl font-bold tracking-tight text-rose-600">$0/yr</div>
+          <div id="cf-kpi-ret-spending-sub" class="mt-1 text-xs text-slate-500">Present value compounded by inflation</div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm">
+          <div class="text-xs font-semibold uppercase tracking-wider text-slate-500">Final Estate at Decease</div>
+          <div id="cf-kpi-final-estate" class="mt-2 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">$0</div>
+          <div id="cf-kpi-final-estate-sub" class="mt-1 text-xs text-slate-500">Ending savings at life expectancy</div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm">
+          <div class="text-xs font-semibold uppercase tracking-wider text-slate-500">Forecast Status</div>
+          <div id="cf-kpi-sustainability" class="mt-2 text-2xl sm:text-3xl font-bold tracking-tight text-emerald-600">Sustainable</div>
+          <div id="cf-kpi-sustainability-sub" class="mt-1 text-xs text-slate-500">Trajectory from current age to decease</div>
+        </div>
+      </div>
+
+      <!-- Forecast Parameters Input Panel -->
+      <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5">
+        <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Financial Status &amp; Forecast Assumptions</h2>
+            <p class="text-xs text-slate-500">
+              Adjust your age, income, investment rate, return rates, inflation, and retirement targets. Changes auto-calculate immediately.
+            </p>
+          </div>
+          <button
+            type="button"
+            id="btn-sync-from-bs"
+            class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-colors"
+          >
+            ⟳ Sync Starting Savings from Productive Assets
+          </button>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <!-- 1. Current Age -->
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/70">
+            <label for="cf-current-age" class="block text-xs font-semibold text-slate-700">Current Age (Years)</label>
+            <input
+              type="number"
+              id="cf-current-age"
+              min="18"
+              max="100"
+              step="1"
+              class="mt-1.5 w-full text-sm font-semibold px-3 py-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:border-indigo-500"
+            />
+            <span class="block mt-1 text-[11px] text-slate-500">Starting age for year-0 forecast</span>
+          </div>
+
+          <!-- 2. Target Retirement Age -->
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/70">
+            <label for="cf-retirement-age" class="block text-xs font-semibold text-slate-700">Target Retirement Age</label>
+            <input
+              type="number"
+              id="cf-retirement-age"
+              min="25"
+              max="110"
+              step="1"
+              class="mt-1.5 w-full text-sm font-semibold px-3 py-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:border-indigo-500"
+            />
+            <span class="block mt-1 text-[11px] text-slate-500">Age when earned salary stops</span>
+          </div>
+
+          <!-- 3. Life Expectancy (Age of Decease) -->
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/70">
+            <label for="cf-life-expectancy" class="block text-xs font-semibold text-slate-700">Life Expectancy (Age of Decease)</label>
+            <input
+              type="number"
+              id="cf-life-expectancy"
+              min="40"
+              max="120"
+              step="1"
+              class="mt-1.5 w-full text-sm font-semibold px-3 py-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:border-indigo-500"
+            />
+            <span class="block mt-1 text-[11px] text-slate-500">End age of cashflow simulation</span>
+          </div>
+
+          <!-- 4. Starting Savings / Capital -->
+          <div class="p-3 rounded-xl bg-indigo-50/50 border border-indigo-200/80">
+            <label for="cf-starting-savings" class="block text-xs font-semibold text-indigo-900">Starting Savings / Capital ($)</label>
+            <input
+              type="number"
+              id="cf-starting-savings"
+              min="0"
+              step="1000"
+              class="mt-1.5 w-full text-sm font-semibold px-3 py-2 rounded-lg border border-indigo-300 bg-white focus:outline-none focus:border-indigo-600"
+            />
+            <span class="block mt-1 text-[11px] text-indigo-700">Initial invested capital at current age</span>
+          </div>
+
+          <!-- 5. Yearly Income -->
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/70">
+            <label for="cf-yearly-income" class="block text-xs font-semibold text-slate-700">Yearly Income ($)</label>
+            <input
+              type="number"
+              id="cf-yearly-income"
+              min="0"
+              step="1000"
+              class="mt-1.5 w-full text-sm font-semibold px-3 py-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:border-indigo-500"
+            />
+            <span class="block mt-1 text-[11px] text-slate-500">Current annual active income</span>
+          </div>
+
+          <!-- 6. Expected Income Growth Rate -->
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/70">
+            <label for="cf-income-growth" class="block text-xs font-semibold text-slate-700">Expected Income Growth Rate (%)</label>
+            <input
+              type="number"
+              id="cf-income-growth"
+              step="0.1"
+              class="mt-1.5 w-full text-sm font-semibold px-3 py-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:border-indigo-500"
+            />
+            <span class="block mt-1 text-[11px] text-slate-500">Yearly salary growth until retirement</span>
+          </div>
+
+          <!-- 7. Investment Percentage -->
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/70">
+            <label for="cf-investment-pct" class="block text-xs font-semibold text-slate-700">Investment Percentage (%)</label>
+            <input
+              type="number"
+              id="cf-investment-pct"
+              min="0"
+              max="100"
+              step="0.5"
+              class="mt-1.5 w-full text-sm font-semibold px-3 py-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:border-indigo-500"
+            />
+            <span class="block mt-1 text-[11px] text-slate-500">% of yearly income saved &amp; invested</span>
+          </div>
+
+          <!-- 8. Yearly Spending in Retirement (PV) -->
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/70">
+            <label for="cf-retirement-spending-pv" class="block text-xs font-semibold text-slate-700">Retirement Spending (PV $)</label>
+            <input
+              type="number"
+              id="cf-retirement-spending-pv"
+              min="0"
+              step="1000"
+              class="mt-1.5 w-full text-sm font-semibold px-3 py-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:border-indigo-500"
+            />
+            <span class="block mt-1 text-[11px] text-slate-500">Present value; grows by inflation rate</span>
+          </div>
+
+          <!-- 9. Yearly Cash Return Rate -->
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/70">
+            <label for="cf-cash-return-rate" class="block text-xs font-semibold text-slate-700">Yearly Cash Return Rate (%)</label>
+            <input
+              type="number"
+              id="cf-cash-return-rate"
+              step="0.1"
+              class="mt-1.5 w-full text-sm font-semibold px-3 py-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:border-indigo-500"
+            />
+            <span class="block mt-1 text-[11px] text-slate-500">Annual dividends / interest yield on savings</span>
+          </div>
+
+          <!-- 10. Yearly Capital Growth Rate -->
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/70">
+            <label for="cf-capital-growth-rate" class="block text-xs font-semibold text-slate-700">Yearly Capital Growth Rate (%)</label>
+            <input
+              type="number"
+              id="cf-capital-growth-rate"
+              step="0.1"
+              class="mt-1.5 w-full text-sm font-semibold px-3 py-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:border-indigo-500"
+            />
+            <span class="block mt-1 text-[11px] text-slate-500">Annual capital appreciation on savings</span>
+          </div>
+
+          <!-- 11. Expected Inflation Rate -->
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/70">
+            <label for="cf-inflation-rate" class="block text-xs font-semibold text-slate-700">Expected Inflation Rate (%)</label>
+            <input
+              type="number"
+              id="cf-inflation-rate"
+              step="0.1"
+              class="mt-1.5 w-full text-sm font-semibold px-3 py-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:border-indigo-500"
+            />
+            <span class="block mt-1 text-[11px] text-slate-500">Compounds future retirement spendings</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cashflow & Forecast Visualizations (Charts) -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5">
+          <h3 class="text-sm font-bold text-slate-900">Accumulated Savings Trajectory</h3>
+          <p class="text-xs text-slate-500 mb-3">Nominal vs. Inflation-Adjusted (Present Value) Savings</p>
+          <div class="relative h-72">
+            <canvas id="chart-wealth-trajectory"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5">
+          <h3 class="text-sm font-bold text-slate-900">Yearly Cashflow Components</h3>
+          <p class="text-xs text-slate-500 mb-3">Invested Salary, Cash Return, Capital Growth &amp; Outflows</p>
+          <div class="relative h-72">
+            <canvas id="chart-cashflow-components"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5">
+          <h3 class="text-sm font-bold text-slate-900">Income &amp; Portfolio Return vs. Spending</h3>
+          <p class="text-xs text-slate-500 mb-3">Comparing active salary, investment return, and future spending</p>
+          <div class="relative h-72">
+            <canvas id="chart-income-vs-spending"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Year-by-Year Cashflow Schedule Table -->
+      <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5">
+        <div class="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Year-by-Year Cashflow &amp; Savings Schedule</h2>
+            <p class="text-xs text-slate-500">
+              Auto-calculated from Current Year to Age of Decease (🎯 marks Target Retirement Age transition)
+            </p>
+          </div>
+          <select
+            id="cf-phase-filter"
+            aria-label="Filter Forecast Phase"
+            class="text-xs border border-slate-200 rounded-lg px-3 py-1.5 bg-slate-50 text-slate-700 font-medium"
+          >
+            <option value="ALL">Show All Years (Working + Retirement)</option>
+            <option value="WORKING">Working Years Only</option>
+            <option value="RETIREMENT">Retirement Years Only</option>
+          </select>
+        </div>
+
+        <div class="mt-4 max-h-[500px] overflow-y-auto overflow-x-auto custom-scrollbar border border-slate-200 rounded-xl">
+          <table class="w-full text-left border-collapse">
+            <thead class="sticky-th bg-slate-100 border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
+              <tr>
+                <th class="py-3 px-3 bg-slate-100">Year</th>
+                <th class="py-3 px-3 bg-slate-100">Age</th>
+                <th class="py-3 px-3 bg-slate-100">Phase</th>
+                <th class="py-3 px-3 text-right bg-slate-100">Begin Savings</th>
+                <th class="py-3 px-3 text-right bg-slate-100">Yearly Income</th>
+                <th class="py-3 px-3 text-right bg-slate-100">Invested Salary</th>
+                <th class="py-3 px-3 text-right bg-slate-100">Cash Return</th>
+                <th class="py-3 px-3 text-right bg-slate-100">Capital Growth</th>
+                <th class="py-3 px-3 text-right bg-slate-100">Future Spending</th>
+                <th class="py-3 px-3 text-right bg-slate-100">Net Cashflow</th>
+                <th class="py-3 px-3 text-right bg-slate-100">End Savings (Nom.)</th>
+                <th class="py-3 px-3 text-right bg-slate-100">End Savings (PV)</th>
+              </tr>
+            </thead>
+            <tbody id="cashflow-forecast-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         RUN-TIME LOG & DEBUGGING SECTION (Always at the end of the page)
+         =================================================================== -->
+    <section id="runtime-log-section" class="bg-slate-900 text-slate-100 rounded-2xl border border-slate-800 shadow-lg overflow-hidden">
+      <div class="p-4 sm:p-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-slate-950/60">
+        <div>
+          <div class="flex items-center gap-2.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <h2 class="text-sm sm:text-base font-bold font-mono tracking-tight text-white">
+              Run-Time Log &amp; Error Diagnostics Console
+            </h2>
+          </div>
+          <p class="text-xs text-slate-400 mt-0.5">
+            Live run-time status, module lifecycle events, storage I/O, calculation audits, and uncaught error traces
+          </p>
+        </div>
+
+        <!-- Log Summary Counters -->
+        <div class="flex flex-wrap items-center gap-2 text-xs font-mono">
+          <span class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300">
+            Total: <strong id="log-count-total" class="text-white">0</strong>
+          </span>
+          <span class="px-2.5 py-1 rounded-lg bg-emerald-950/80 text-emerald-300 border border-emerald-800/50">
+            Info/Debug: <strong id="log-count-info">0</strong>
+          </span>
+          <span class="px-2.5 py-1 rounded-lg bg-amber-950/80 text-amber-300 border border-amber-800/50">
+            Warn: <strong id="log-count-warn">0</strong>
+          </span>
+          <span class="px-2.5 py-1 rounded-lg bg-rose-950/80 text-rose-300 border border-rose-800/50">
+            Errors: <strong id="log-count-error">0</strong>
+          </span>
+        </div>
+      </div>
+
+      <!-- Log Filter & Action Toolbar -->
+      <div class="px-4 py-3 bg-slate-900 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2.5">
+        <div class="flex flex-wrap items-center gap-2">
+          <select
+            id="log-filter-level"
+            aria-label="Filter Log Level"
+            class="text-xs font-mono bg-slate-800 text-slate-200 border border-slate-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-indigo-500"
+          >
+            <option value="ALL">Level: ALL</option>
+            <option value="INFO">Level: INFO</option>
+            <option value="WARN">Level: WARN</option>
+            <option value="ERROR">Level: ERROR</option>
+            <option value="DEBUG">Level: DEBUG</option>
+          </select>
+
+          <input
+            type="text"
+            id="log-search-input"
+            placeholder="Filter logs by module or keyword..."
+            class="text-xs font-mono bg-slate-800 text-slate-200 border border-slate-700 rounded-lg px-3 py-1.5 w-56 sm:w-72 focus:outline-none focus:border-indigo-500"
+          />
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            id="btn-simulate-error"
+            class="px-2.5 py-1.5 rounded-lg text-xs font-mono font-medium bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 transition-colors"
+          >
+            ⚡ Simulate Error
+          </button>
+          <button
+            type="button"
+            id="btn-export-logs"
+            class="px-2.5 py-1.5 rounded-lg text-xs font-mono font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"
+          >
+            Export Logs (.json)
+          </button>
+          <button
+            type="button"
+            id="btn-clear-logs"
+            class="px-2.5 py-1.5 rounded-lg text-xs font-mono font-medium bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 transition-colors"
+          >
+            Clear Console
+          </button>
+        </div>
+      </div>
+
+      <!-- Log Stream Container -->
+      <div id="log-entries-container" class="max-h-72 overflow-y-auto log-terminal bg-slate-950/70 divide-y divide-slate-800/60"></div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="max-w-7xl w-full mx-auto px-4 sm:px-6 py-4 text-center text-xs text-slate-400 border-t border-slate-200/70">
+    myFinance — Modular HTML/CSS/JS Financial Suite • Hosted on GitHub Pages • Local Device Storage &amp; Excel (.xlsx) Backup/Restore
+  </footer>
+
+  <!-- Reset / Clear Confirmation Modal (In-page modal, no browser alert/confirm) -->
+  <div id="reset-confirm-modal" class="hidden fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200">
+      <h3 class="text-base font-bold text-slate-900">Manage Local Portfolio Data</h3>
+      <p class="mt-2 text-xs sm:text-sm text-slate-600">
+        Choose whether to restore the default sample dataset or clear all assets and liabilities to start with a blank slate.
+      </p>
+      <div class="mt-5 flex flex-wrap items-center justify-end gap-2">
+        <button
+          type="button"
+          id="btn-cancel-reset"
+          class="px-3.5 py-2 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          id="btn-confirm-clear-all"
+          class="px-3.5 py-2 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white"
+        >
+          Clear All Data
+        </button>
+        <button
+          type="button"
+          id="btn-confirm-reset-demo"
+          class="px-3.5 py-2 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white"
+        >
+          Restore Demo Data
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
+
+  <!-- Compartmentalized Application Modules -->
+  <script src="./logger.js"></script>
+  <script src="./storage.js"></script>
+  <script src="./charts.js"></script>
+  <script src="./balanceSheet.js"></script>
+  <script src="./cashflow.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

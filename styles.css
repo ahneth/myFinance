@@ -1,0 +1,142 @@
+/* ==========================================================================
+   myFinance - Custom Stylesheet (styles.css)
+   Compartmentalized styling for Balance Sheet, Cashflow Forecast & Log Panel
+   ========================================================================== */
+
+:root {
+  --bg-primary: #f8fafc;
+  --bg-card: #ffffff;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --accent-indigo: #4f46e5;
+  --accent-emerald: #10b981;
+  --accent-rose: #f43f5e;
+  --accent-amber: #f59e0b;
+  --border-subtle: #e2e8f0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Smooth tab transitions */
+.tab-panel {
+  animation: fadeIn 0.22s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Navigation Tab Active States */
+.nav-tab-btn {
+  position: relative;
+  transition: all 0.18s ease;
+}
+
+.nav-tab-btn.active {
+  color: #4f46e5;
+  background-color: #eef2ff;
+  border-color: #c7d2fe;
+  font-weight: 600;
+}
+
+/* Custom Scrollbar for Forecast Table and Run-Time Log */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Dark Scrollbar for Terminal Log Viewer */
+.log-terminal::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.log-terminal::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+
+.log-terminal::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+
+.log-terminal::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Sticky Table Headers */
+.sticky-th th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* Number Input Clean Spinners */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  opacity: 1;
+}
+
+/* Ratio Progress Bar Transitions */
+.ratio-bar-fill {
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Toast Notification Animation */
+.toast-enter {
+  animation: slideInUp 0.25s ease-out forwards;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Print Layout Adjustments */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #ffffff;
+  }
+}
