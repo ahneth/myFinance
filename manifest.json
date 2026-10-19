@@ -1,0 +1,35 @@
+{
+  "name": "myFinance \u2014 Executive Wealth & Cashflow Suite",
+  "short_name": "myFinance",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#171542",
+  "theme_color": "#171542",
+  "description": "Executive Personal Balance Sheet, Financial Health Ratios & Multi-Decade Retirement Cashflow Forecasting Suite",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

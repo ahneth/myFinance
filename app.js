@@ -160,6 +160,26 @@
     }
   }
 
+  
+  function ensureAndroidShortcutIcons() {
+    try {
+      // Register Service Worker on HTTP/HTTPS for Android PWA Home Screen Shortcut installation
+      if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.protocol === 'http:')) {
+        navigator.serviceWorker.register('./sw.js').then(function (reg) {
+          if (myFinance.Logger) {
+            myFinance.Logger.info('App', 'PWA Service Worker registered for Android Home Screen shortcut support.', {
+              scope: reg.scope
+            });
+          }
+        }).catch(function (err) {
+          if (myFinance.Logger) {
+            myFinance.Logger.debug('App', 'Service Worker registration skipped: ' + err.message);
+          }
+        });
+      }
+    } catch (e) {}
+  }
+
   function bootstrap() {
     try {
       if (myFinance.Logger) myFinance.Logger.init();
@@ -167,6 +187,7 @@
       if (myFinance.BalanceSheet) myFinance.BalanceSheet.init();
       if (myFinance.Cashflow) myFinance.Cashflow.init();
       bindGlobalControls();
+      ensureAndroidShortcutIcons();
       myFinance.Logger.info('App', 'PWA shortcut & bookmark icons configured (Android Web App Manifest, Apple Touch Icon, PC SVG/ICO favicons).');
       myFinance.Logger.info('App', 'myFinance web application ready.', {
         activeTab: activeTab
