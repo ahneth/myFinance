@@ -2,7 +2,19 @@
  * ============================================================================
  * myFinance - Yearly Cashflows & Forecast Module (cashflow.js)
  * Auto-calculates year-by-year cashflows, inflation-adjusted spendings,
- * cash returns, and capital growth from Current Age to Age of Decease.
+ * pension inflows, cash returns, and capital growth from Current Age to Decease.
+ *
+ * Core Model:
+ * - Initial Savings entered right after Current Age.
+ * - Expected Pension entered right after Target Retirement Age.
+ * - During working years, the remaining amount after the income investment
+ *   percentage is all spent: Spent = Income * (1 - Investment%), so Net Cash
+ *   Inflow added to Savings = Income * Investment%.
+ * - During retirement years, Cash Inflow is Expected Pension and Cash Outflow
+ *   is Yearly Spending in Retirement (PV) grown by Expected Inflation Rate.
+ * - All remaining Savings after cash inflows and outflows
+ *   (RemainingSavings = BeginSavings + NetCashInflowOutflow) are subject to
+ *   Yearly Cash Return Rate and Yearly Capital Growth Rate.
  * ============================================================================
  */
 (function (global) {
@@ -12,6 +24,7 @@
 
   const INPUT_IDS = [
     { key: 'currentAge', id: 'cf-current-age', type: 'int' },
+    { key: 'initialSavings', id: 'cf-starting-savings', type: 'float' },
     { key: 'yearlyIncome', id: 'cf-yearly-income', type: 'float' },
     { key: 'incomeGrowthRate', id: 'cf-income-growth', type: 'float' },
     { key: 'investmentPercentage', id: 'cf-investment-pct', type: 'float' },
@@ -19,9 +32,9 @@
     { key: 'capitalGrowthRate', id: 'cf-capital-growth-rate', type: 'float' },
     { key: 'inflationRate', id: 'cf-inflation-rate', type: 'float' },
     { key: 'retirementAge', id: 'cf-retirement-age', type: 'int' },
+    { key: 'expectedPension', id: 'cf-expected-pension', type: 'float' },
     { key: 'retirementSpendingPV', id: 'cf-retirement-spending-pv', type: 'float' },
-    { key: 'lifeExpectancy', id: 'cf-life-expectancy', type: 'int' },
-    { key: 'startingSavings', id: 'cf-starting-savings', type: 'float' }
+    { key: 'lifeExpectancy', id: 'cf-life-expectancy', type: 'int' }
   ];
 
   function formatMoney(amount) {
@@ -53,6 +66,9 @@
       }
     });
 
+    // Keep startingSavings alias in sync with initialSavings
+    p.startingSavings = p.initialSavings;
+
     // Enforce logical age ordering
     if (p.currentAge < 18) p.currentAge = 18;
     if (p.retirementAge <= p.currentAge) p.retirementAge = p.currentAge + 1;
@@ -62,25 +78,6 @@
     myFinance.Storage.save();
   }
 
-  /**
-   * Year-by-year forecast engine from Current Year (Current Age) to Age of Decease:
-   * - Working Years (age < retirementAge):
-   *   * Yearly Income grows by Expected Income Growth Rate: Income_t = YearlyIncome * (1 + incomeGrowthRate)^t
-   *   * Active Savings from Income = Income_t * (InvestmentPercentage / 100)
-   *   * Implied Working Living Spending = Income_t * (1 - InvestmentPercentage / 100)
-   *   * Cash Return = BeginSavings * (CashReturnRate / 100)
-   *   * Capital Growth = BeginSavings * (CapitalGrowthRate / 100)
-   *   * Net Cashflow Added to Savings = Active Savings + Cash Return + Capital Growth
-   * - Retirement Years (age >= retirementAge):
-   *   * Earned Income = 0
-   *   * Future Spending in Retirement grows by Inflation Rate from Today (t years from Current Age):
-   *     RetirementSpending_t = RetirementSpendingPV * (1 + inflationRate)^t
-   *   * Cash Return = BeginSavings * (CashReturnRate / 100)
-   *   * Capital Growth = BeginSavings * (CapitalGrowthRate / 100)
-   *   * Net Cashflow = Cash Return + Capital Growth - RetirementSpending_t
-   * - Ending Savings (Nominal) = BeginSavings + Net Cashflow
-   * - Ending Savings (Present Value) = Ending Savings / (1 + inflationRate)^(t + 1)
-   */
   function computeForecast() {
     const p = myFinance.Storage.getState().cashflowParams;
     const startYear = new Date().getFullYear();
@@ -91,14 +88,16 @@
     const cashRate = (Number(p.cashReturnRate) || 0) / 100;
     const capGrowthRate = (Number(p.capitalGrowthRate) || 0) / 100;
     const infRate = (Number(p.inflationRate) || 0) / 100;
+    const expectedPension = Math.max(0, Number(p.expectedPension) || 0);
 
-    let currentSavings = Number(p.startingSavings) || 0;
+    let currentSavings =
+      Number(p.initialSavings !== undefined ? p.initialSavings : p.startingSavings) || 0;
     const rows = [];
 
     let retirementNestEggNominal = null;
     let retirementNestEggPV = null;
     let firstRetirementSpending = null;
-    let firstRetirementCashReturn = null;
+    let firstRetirementPension = null;
     let depletionAge = null;
 
     for (let t = 0; t <= horizon; t++) {
@@ -110,36 +109,39 @@
       const beginSavings = currentSavings;
       const inflationFactor = Math.pow(1 + infRate, t);
 
-      // Earned income during working years
+      // 1. Cash Inflows (Working Income vs. Retirement Expected Pension)
       const income = isRetired ? 0 : p.yearlyIncome * Math.pow(1 + incGrowth, t);
+      const pension = isRetired ? expectedPension : 0;
 
-      // Future retirement spending grown by inflation rate from present value
+      // 2. Cash Outflows (Spent Amount)
+      // - Working years: remaining amount after income investment percentage is all spent
+      // - Retirement years: Yearly Spending in Retirement (PV) grown by inflation rate
       const inflationAdjustedRetirementSpending = p.retirementSpendingPV * inflationFactor;
-
-      // Active savings from salary during working years
       const activeSavings = isRetired ? 0 : income * invPct;
-
-      // Working living expenses vs retirement inflation-adjusted spending
       const spending = isRetired ? inflationAdjustedRetirementSpending : income * (1 - invPct);
 
-      // Returns on accumulated savings (only positive savings earn positive cash/capital return)
-      const productiveBase = Math.max(0, beginSavings);
+      // 3. Net Cash Inflow / Outflow into Savings before investment returns
+      // - Working: Income - WorkingSpending = activeSavings (Income * invPct)
+      // - Retirement: ExpectedPension - RetirementSpending
+      const netInflowOutflow = isRetired ? pension - spending : activeSavings;
+
+      // 4. All remaining Savings after cash inflows and outflows are subject to
+      //    yearly cash return and yearly capital growth
+      const remainingSavings = beginSavings + netInflowOutflow;
+      const productiveBase = Math.max(0, remainingSavings);
       const cashReturn = productiveBase * cashRate;
       const capitalGrowth = productiveBase * capGrowthRate;
 
-      // Net impact on savings / portfolio
-      const netCashflow = isRetired
-        ? cashReturn + capitalGrowth - inflationAdjustedRetirementSpending
-        : activeSavings + cashReturn + capitalGrowth;
-
-      const endSavings = beginSavings + netCashflow;
+      // 5. Total Net Change in Savings & Ending Savings
+      const netCashflow = netInflowOutflow + cashReturn + capitalGrowth;
+      const endSavings = remainingSavings + cashReturn + capitalGrowth;
       const endSavingsPV = endSavings / Math.pow(1 + infRate, t + 1);
 
       if (age === p.retirementAge) {
         retirementNestEggNominal = beginSavings;
         retirementNestEggPV = beginSavings / inflationFactor;
         firstRetirementSpending = inflationAdjustedRetirementSpending;
-        firstRetirementCashReturn = cashReturn + capitalGrowth;
+        firstRetirementPension = pension;
       }
 
       if (endSavings < 0 && depletionAge === null) {
@@ -154,9 +156,11 @@
         phase,
         beginSavings,
         income,
+        pension,
         activeSavings,
         spending,
-        retirementBenchmarkSpending: inflationAdjustedRetirementSpending,
+        netInflowOutflow,
+        remainingSavings,
         cashReturn,
         capitalGrowth,
         netCashflow,
@@ -181,7 +185,7 @@
       retirementNestEggPV:
         retirementNestEggPV !== null ? retirementNestEggPV : finalRow.endSavingsPV,
       firstRetirementSpending: firstRetirementSpending || 0,
-      firstRetirementCashReturn: firstRetirementCashReturn || 0,
+      firstRetirementPension: firstRetirementPension || 0,
       finalEstateNominal: finalRow.endSavings,
       finalEstatePV: finalRow.endSavingsPV,
       depletionAge: depletionAge
@@ -211,11 +215,10 @@
     if (retSpendEl) retSpendEl.textContent = formatMoney(forecast.firstRetirementSpending) + '/yr';
     if (retSpendSubEl) {
       retSpendSubEl.textContent =
-        'Today PV: ' +
-        formatMoney(p.retirementSpendingPV) +
-        ' @ ' +
-        p.inflationRate.toFixed(1) +
-        '% inflation';
+        'Pension: ' +
+        formatMoney(p.expectedPension) +
+        '/yr • Spending PV: ' +
+        formatMoney(p.retirementSpendingPV);
     }
 
     if (finalEl) {
@@ -245,7 +248,7 @@
         statusSubEl.textContent =
           'Portfolio turns negative at Age ' +
           forecast.depletionAge +
-          ' — adjust savings % or retirement age';
+          ' — adjust savings %, pension, or retirement age';
       }
     }
   }
@@ -275,6 +278,12 @@
           ? '<span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-800">Retired</span>'
           : '<span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-sky-100 text-sky-800">Working</span>';
 
+        const inflowDisplay = r.isRetired
+          ? r.pension > 0
+            ? '<span class="text-sky-700" title="Expected Pension">' + formatMoney(r.pension) + '</span>'
+            : '—'
+          : formatMoney(r.income);
+
         return (
           '<tr class="' + rowHighlight + ' hover:bg-slate-100/70 transition-colors text-xs sm:text-sm">' +
             '<td class="py-2.5 px-3 font-mono text-slate-600">' + r.year + '</td>' +
@@ -284,34 +293,24 @@
             '</td>' +
             '<td class="py-2.5 px-3">' + phaseBadge + '</td>' +
             '<td class="py-2.5 px-3 text-right font-mono text-slate-700">' + formatMoney(r.beginSavings) + '</td>' +
-            '<td class="py-2.5 px-3 text-right font-mono text-slate-700">' +
-              (r.income > 0 ? formatMoney(r.income) : '—') +
-            '</td>' +
-            '<td class="py-2.5 px-3 text-right font-mono text-sky-700 font-medium">' +
-              (r.activeSavings > 0 ? '+' + formatMoney(r.activeSavings) : '—') +
-            '</td>' +
-            '<td class="py-2.5 px-3 text-right font-mono text-emerald-600">' +
-              '+' + formatMoney(r.cashReturn) +
-            '</td>' +
-            '<td class="py-2.5 px-3 text-right font-mono text-indigo-600">' +
-              '+' + formatMoney(r.capitalGrowth) +
-            '</td>' +
-            '<td class="py-2.5 px-3 text-right font-mono text-rose-600">' +
-              formatMoney(r.spending) +
-            '</td>' +
-            '<td class="py-2.5 px-3 text-right font-mono font-semibold ' +
-              (r.netCashflow >= 0 ? 'text-emerald-700' : 'text-rose-600') +
+            '<td class="py-2.5 px-3 text-right font-mono text-slate-700">' + inflowDisplay + '</td>' +
+            '<td class="py-2.5 px-3 text-right font-mono text-rose-600">-' + formatMoney(r.spending) + '</td>' +
+            '<td class="py-2.5 px-3 text-right font-mono font-medium ' +
+              (r.netInflowOutflow >= 0 ? 'text-sky-700' : 'text-rose-600') +
             '">' +
-              (r.netCashflow >= 0 ? '+' : '') + formatMoney(r.netCashflow) +
+              (r.netInflowOutflow >= 0 ? '+' : '') + formatMoney(r.netInflowOutflow) +
             '</td>' +
+            '<td class="py-2.5 px-3 text-right font-mono font-semibold text-slate-800 bg-slate-50/80">' +
+              formatMoney(r.remainingSavings) +
+            '</td>' +
+            '<td class="py-2.5 px-3 text-right font-mono text-emerald-600">+' + formatMoney(r.cashReturn) + '</td>' +
+            '<td class="py-2.5 px-3 text-right font-mono text-indigo-600">+' + formatMoney(r.capitalGrowth) + '</td>' +
             '<td class="py-2.5 px-3 text-right font-mono font-bold ' +
               (r.endSavings >= 0 ? 'text-slate-900' : 'text-rose-600') +
             '">' +
               formatMoney(r.endSavings) +
             '</td>' +
-            '<td class="py-2.5 px-3 text-right font-mono text-teal-700">' +
-              formatMoney(r.endSavingsPV) +
-            '</td>' +
+            '<td class="py-2.5 px-3 text-right font-mono text-teal-700">' + formatMoney(r.endSavingsPV) + '</td>' +
           '</tr>'
         );
       })
@@ -328,6 +327,8 @@
     if (logEvent) {
       myFinance.Logger.info('Cashflow', 'Recalculated yearly cashflow forecast (Age ' +
         forecast.params.currentAge + ' to ' + forecast.params.lifeExpectancy + ').', {
+        initialSavings: Math.round(forecast.params.initialSavings),
+        expectedPension: Math.round(forecast.params.expectedPension),
         retirementNestEggNominal: Math.round(forecast.retirementNestEggNominal),
         finalEstateNominal: Math.round(forecast.finalEstateNominal),
         depletionAge: forecast.depletionAge
@@ -357,27 +358,29 @@
       });
     }
 
-    // Sync Starting Savings & Weighted Return from Balance Sheet
+    // Sync Initial Savings from Balance Sheet Productive Assets
     const syncBtn = document.getElementById('btn-sync-from-bs');
     if (syncBtn) {
       syncBtn.addEventListener('click', function () {
         if (!myFinance.BalanceSheet) return;
         const bs = myFinance.BalanceSheet.computeSummary();
         const state = myFinance.Storage.getState();
-        state.cashflowParams.startingSavings = Math.max(0, Math.round(bs.productiveAssets));
+        const syncedVal = Math.max(0, Math.round(bs.productiveAssets));
+        state.cashflowParams.initialSavings = syncedVal;
+        state.cashflowParams.startingSavings = syncedVal;
         myFinance.Storage.save();
         populateInputsFromState();
         refreshAll(true);
         myFinance.Logger.info(
           'Cashflow',
-          'Synced Starting Savings with Productive Assets from Balance Sheet ($' +
-            Math.round(bs.productiveAssets).toLocaleString() +
+          'Synced Initial Savings with Productive Assets from Balance Sheet ($' +
+            syncedVal.toLocaleString() +
             ').'
         );
         if (myFinance.App && myFinance.App.showToast) {
           myFinance.App.showToast(
-            'Synced Starting Savings to Productive Assets ($' +
-              Math.round(bs.productiveAssets).toLocaleString() +
+            'Synced Initial Savings to Productive Assets ($' +
+              syncedVal.toLocaleString() +
               ')',
             'success'
           );

@@ -15,7 +15,7 @@
     return {
       meta: {
         appName: 'myFinance',
-        version: '1.0.0',
+        version: '1.1.0',
         lastUpdated: new Date().toISOString()
       },
       assets: [
@@ -108,6 +108,8 @@
       ],
       cashflowParams: {
         currentAge: 35,
+        initialSavings: 265000,
+        startingSavings: 265000,
         yearlyIncome: 125000,
         incomeGrowthRate: 4.0,
         investmentPercentage: 28.0,
@@ -115,9 +117,9 @@
         capitalGrowthRate: 6.0,
         inflationRate: 2.5,
         retirementAge: 60,
+        expectedPension: 18000,
         retirementSpendingPV: 58000,
-        lifeExpectancy: 90,
-        startingSavings: 265000
+        lifeExpectancy: 90
       }
     };
   }
@@ -197,8 +199,18 @@
       Math.min(120, Math.round(num(raw.lifeExpectancy, def.lifeExpectancy)))
     );
 
+    const initSav = Math.max(
+      0,
+      num(
+        raw.initialSavings !== undefined ? raw.initialSavings : raw.startingSavings,
+        def.initialSavings
+      )
+    );
+
     return {
       currentAge: currentAge,
+      initialSavings: initSav,
+      startingSavings: initSav,
       yearlyIncome: Math.max(0, num(raw.yearlyIncome, def.yearlyIncome)),
       incomeGrowthRate: num(raw.incomeGrowthRate, def.incomeGrowthRate),
       investmentPercentage: Math.max(0, Math.min(100, num(raw.investmentPercentage, def.investmentPercentage))),
@@ -206,9 +218,9 @@
       capitalGrowthRate: num(raw.capitalGrowthRate, def.capitalGrowthRate),
       inflationRate: num(raw.inflationRate, def.inflationRate),
       retirementAge: retirementAge,
+      expectedPension: Math.max(0, num(raw.expectedPension, def.expectedPension)),
       retirementSpendingPV: Math.max(0, num(raw.retirementSpendingPV, def.retirementSpendingPV)),
-      lifeExpectancy: lifeExpectancy,
-      startingSavings: Math.max(0, num(raw.startingSavings, def.startingSavings))
+      lifeExpectancy: lifeExpectancy
     };
   }
 
@@ -224,7 +236,7 @@
       appState = {
         meta: {
           appName: 'myFinance',
-          version: '1.0.0',
+          version: '1.1.0',
           lastUpdated: (parsed.meta && parsed.meta.lastUpdated) || new Date().toISOString()
         },
         assets: Array.isArray(parsed.assets) ? parsed.assets.map(sanitizeAsset) : getDefaultState().assets,
@@ -310,6 +322,7 @@
       const p = appState.cashflowParams;
       const paramRows = [
         { Key: 'currentAge', Parameter: 'Current Age', Value: p.currentAge, Unit: 'Years' },
+        { Key: 'initialSavings', Parameter: 'Initial Savings', Value: p.initialSavings, Unit: 'Currency ($)' },
         { Key: 'yearlyIncome', Parameter: 'Yearly Income', Value: p.yearlyIncome, Unit: 'Currency ($)' },
         { Key: 'incomeGrowthRate', Parameter: 'Expected Income Growth Rate', Value: p.incomeGrowthRate, Unit: '% per year' },
         { Key: 'investmentPercentage', Parameter: 'Investment Percentage', Value: p.investmentPercentage, Unit: '% of income' },
@@ -317,9 +330,9 @@
         { Key: 'capitalGrowthRate', Parameter: 'Yearly Capital Growth Rate', Value: p.capitalGrowthRate, Unit: '% per year' },
         { Key: 'inflationRate', Parameter: 'Expected Inflation Rate', Value: p.inflationRate, Unit: '% per year' },
         { Key: 'retirementAge', Parameter: 'Target Retirement Age', Value: p.retirementAge, Unit: 'Years' },
+        { Key: 'expectedPension', Parameter: 'Expected Pension', Value: p.expectedPension, Unit: 'Currency ($/yr)' },
         { Key: 'retirementSpendingPV', Parameter: 'Yearly Spending in Retirement (Present Value)', Value: p.retirementSpendingPV, Unit: 'Currency ($)' },
-        { Key: 'lifeExpectancy', Parameter: 'Life Expectancy (Age of Decease)', Value: p.lifeExpectancy, Unit: 'Years' },
-        { Key: 'startingSavings', Parameter: 'Starting Savings / Capital', Value: p.startingSavings, Unit: 'Currency ($)' }
+        { Key: 'lifeExpectancy', Parameter: 'Life Expectancy (Age of Decease)', Value: p.lifeExpectancy, Unit: 'Years' }
       ];
       const wsParams = global.XLSX.utils.json_to_sheet(paramRows);
       global.XLSX.utils.book_append_sheet(wb, wsParams, 'Cashflow_Params');
@@ -356,11 +369,12 @@
             Phase: r.phase,
             'Beginning Savings ($)': Number(r.beginSavings.toFixed(2)),
             'Yearly Income ($)': Number(r.income.toFixed(2)),
-            'Active Savings / Investment ($)': Number(r.activeSavings.toFixed(2)),
+            'Expected Pension ($)': Number(r.pension.toFixed(2)),
+            'Spending Outflow ($)': Number(r.spending.toFixed(2)),
+            'Net Cash Inflow / Outflow ($)': Number(r.netInflowOutflow.toFixed(2)),
+            'Remaining Savings After Cashflows ($)': Number(r.remainingSavings.toFixed(2)),
             'Cash Return ($)': Number(r.cashReturn.toFixed(2)),
             'Capital Growth ($)': Number(r.capitalGrowth.toFixed(2)),
-            'Future Spending (Inflation-Adj $)': Number(r.spending.toFixed(2)),
-            'Net Cashflow ($)': Number(r.netCashflow.toFixed(2)),
             'Ending Savings Nominal ($)': Number(r.endSavings.toFixed(2)),
             'Ending Savings Present Value ($)': Number(r.endSavingsPV.toFixed(2))
           };
@@ -511,6 +525,7 @@
     clearAll: function () {
       appState.assets = [];
       appState.liabilities = [];
+      appState.cashflowParams.initialSavings = 0;
       appState.cashflowParams.startingSavings = 0;
       saveToLocalStorage();
       myFinance.Logger.warn('Storage', 'All assets and liabilities cleared by user.');

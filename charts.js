@@ -276,6 +276,16 @@
                 pointRadius: 2
               },
               {
+                label: 'Remaining Savings Pre-Return ($)',
+                data: rows.map((r) => Math.round(r.remainingSavings)),
+                borderColor: '#6366f1',
+                backgroundColor: 'transparent',
+                borderDash: [2, 2],
+                fill: false,
+                tension: 0.25,
+                pointRadius: 1.5
+              },
+              {
                 label: 'Ending Savings (Inflation-Adjusted PV $)',
                 data: rows.map((r) => Math.round(r.endSavingsPV)),
                 borderColor: '#0d9488',
@@ -323,7 +333,7 @@
         });
       }
 
-      // 2. Yearly Cashflows Breakdown (Active Investment + Cash Return + Capital Growth vs Retirement Spending)
+      // 2. Yearly Cashflows Breakdown (Invested Salary / Pension + Cash Return + Capital Growth vs Retirement Net Outflow)
       const ctxComp = document.getElementById('chart-cashflow-components');
       if (ctxComp) {
         if (instances.cashflowComponents) {
@@ -336,9 +346,15 @@
             labels: rows.map((r) => 'Age ' + r.age),
             datasets: [
               {
-                label: 'Salary Invested ($)',
+                label: 'Invested Salary ($)',
                 data: rows.map((r) => Math.round(r.activeSavings)),
                 backgroundColor: '#3b82f6',
+                stack: 'cashflows'
+              },
+              {
+                label: 'Expected Pension ($)',
+                data: rows.map((r) => Math.round(r.pension)),
+                backgroundColor: '#0ea5e9',
                 stack: 'cashflows'
               },
               {
@@ -368,7 +384,7 @@
             plugins: {
               legend: {
                 position: 'top',
-                labels: { boxWidth: 12, font: { size: 11 } }
+                labels: { boxWidth: 10, font: { size: 10 } }
               },
               tooltip: {
                 callbacks: {
@@ -400,7 +416,7 @@
         });
       }
 
-      // 3. Yearly Income, Total Investment Return & Future Spending Curve
+      // 3. Yearly Inflows (Income + Pension), Portfolio Return & Spending Curve
       const ctxIncSpend = document.getElementById('chart-income-vs-spending');
       if (ctxIncSpend) {
         if (instances.incomeVsSpending) {
@@ -413,8 +429,8 @@
             labels: rows.map((r) => 'Age ' + r.age),
             datasets: [
               {
-                label: 'Yearly Earned Income ($)',
-                data: rows.map((r) => Math.round(r.income)),
+                label: 'Active Income / Pension ($)',
+                data: rows.map((r) => Math.round(r.income + r.pension)),
                 borderColor: '#0284c7',
                 backgroundColor: 'transparent',
                 borderWidth: 2,
@@ -422,7 +438,7 @@
                 pointRadius: 1.5
               },
               {
-                label: 'Future Spending (Grown by Inflation $)',
+                label: 'Yearly Spending Outflow ($)',
                 data: rows.map((r) => Math.round(r.spending)),
                 borderColor: '#e11d48',
                 backgroundColor: 'rgba(225, 29, 72, 0.08)',
@@ -432,7 +448,7 @@
                 pointRadius: 1.5
               },
               {
-                label: 'Annual Cash Return + Capital Growth ($)',
+                label: 'Cash Return + Capital Growth ($)',
                 data: rows.map((r) => Math.round(r.cashReturn + r.capitalGrowth)),
                 borderColor: '#10b981',
                 backgroundColor: 'transparent',
