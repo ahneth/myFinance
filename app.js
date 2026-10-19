@@ -167,6 +167,7 @@
       if (myFinance.BalanceSheet) myFinance.BalanceSheet.init();
       if (myFinance.Cashflow) myFinance.Cashflow.init();
       bindGlobalControls();
+      myFinance.Logger.info('App', 'PWA shortcut & bookmark icons configured (Android Web App Manifest, Apple Touch Icon, PC SVG/ICO favicons).');
       myFinance.Logger.info('App', 'myFinance web application ready.', {
         activeTab: activeTab
       });
