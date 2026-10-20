@@ -2,7 +2,7 @@
  * myFinance - Service Worker (sw.js)
  * Enables PWA installation & reliable Android Home Screen shortcut icons.
  */
-const CACHE_NAME = 'myfinance-pwa-v3';
+const CACHE_NAME = 'myfinance-pwa-v4';
 const ASSETS = [
   './',
   'index.html',

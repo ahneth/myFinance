@@ -179,66 +179,82 @@
          TAB: BALANCE SHEET
          =================================================================== -->
     <section id="panel-balance-sheet" class="tab-panel space-y-6">
-      <!-- Top Executive KPI Cards -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- Hero Net Worth Card -->
-        <div class="hero-nw-card p-5 rounded-2xl relative overflow-hidden">
+      <!-- Top Executive KPI Cards (Including Split Annual Cash Returns, Annual Capital Gain & Auto-Summed Total Return) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        <!-- 1. Hero Net Worth Card -->
+        <div class="hero-nw-card p-4 sm:p-5 rounded-2xl relative overflow-hidden">
           <div class="flex items-center justify-between">
             <span class="text-xs font-semibold uppercase tracking-wider text-indigo-200">Total Net Worth</span>
-            <span class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-emerald-300">
+            <span class="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center text-emerald-300">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </span>
           </div>
           <div id="bs-kpi-net-worth" class="mt-2 text-2xl sm:text-3xl font-bold tracking-tight tabular-nums text-white">$0</div>
-          <div id="bs-kpi-net-worth-sub" class="mt-1.5 text-xs text-indigo-200/90">Total Assets minus Total Liabilities</div>
+          <div id="bs-kpi-net-worth-sub" class="mt-1.5 text-[11px] text-indigo-200/90">Total Assets minus Total Liabilities</div>
         </div>
 
-        <!-- Total Assets Card -->
-        <div class="fin-card fin-card-interactive p-5">
+        <!-- 2. Total Assets Card -->
+        <div class="fin-card fin-card-interactive p-4 sm:p-5">
           <div class="flex items-center justify-between">
             <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Assets</span>
-            <span class="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center">
+            <span class="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
             </span>
           </div>
-          <div id="bs-kpi-total-assets" class="mt-2 text-2xl sm:text-3xl font-bold tracking-tight tabular-nums text-slate-900">$0</div>
-          <div id="bs-kpi-assets-sub" class="mt-1.5 text-xs text-slate-500">Liquid &amp; Fixed Assets</div>
+          <div id="bs-kpi-total-assets" class="mt-2 text-2xl font-bold tracking-tight tabular-nums text-slate-900">$0</div>
+          <div id="bs-kpi-assets-sub" class="mt-1.5 text-[11px] text-slate-500">Liquid &amp; Fixed Assets</div>
         </div>
 
-        <!-- Total Liabilities Card -->
-        <div class="fin-card fin-card-interactive p-5">
+        <!-- 3. Total Liabilities Card -->
+        <div class="fin-card fin-card-interactive p-4 sm:p-5">
           <div class="flex items-center justify-between">
             <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Liabilities</span>
-            <span class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+            <span class="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
               </svg>
             </span>
           </div>
-          <div id="bs-kpi-total-liabilities" class="mt-2 text-2xl sm:text-3xl font-bold tracking-tight tabular-nums text-rose-600">$0</div>
-          <div id="bs-kpi-liabilities-sub" class="mt-1.5 text-xs text-slate-500">Short-Term &amp; Long-Term Debt</div>
+          <div id="bs-kpi-total-liabilities" class="mt-2 text-2xl font-bold tracking-tight tabular-nums text-rose-600">$0</div>
+          <div id="bs-kpi-liabilities-sub" class="mt-1.5 text-[11px] text-slate-500">Short-Term &amp; Long-Term Debt</div>
         </div>
 
-        <!-- Productive Asset Return Card -->
-        <div class="fin-card fin-card-interactive p-5">
+        <!-- 4. Annual Cash Returns Card -->
+        <div class="fin-card fin-card-interactive p-4 sm:p-5 border-t-4 border-t-emerald-500">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Passive Yield / Yr</span>
-            <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
-            </span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Annual Cash Returns</span>
+            <span class="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-emerald-50 text-emerald-700 border border-emerald-200">Cash Yield</span>
           </div>
-          <div id="bs-kpi-productive-return" class="mt-2 text-2xl sm:text-3xl font-bold tracking-tight tabular-nums text-emerald-600">$0/yr</div>
-          <div id="bs-kpi-productive-sub" class="mt-1.5 text-xs text-slate-500">Annual return from productive assets</div>
+          <div id="bs-kpi-cash-return" class="mt-2 text-2xl font-bold tracking-tight tabular-nums text-emerald-600">+$0/yr</div>
+          <div id="bs-kpi-cash-return-sub" class="mt-1.5 text-[11px] text-slate-500">Yearly cash return from productive assets</div>
+        </div>
+
+        <!-- 5. Annual Capital Gain Card -->
+        <div class="fin-card fin-card-interactive p-4 sm:p-5 border-t-4 border-t-purple-500">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Annual Capital Gain</span>
+            <span class="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-purple-50 text-purple-700 border border-purple-200">Cap. Growth</span>
+          </div>
+          <div id="bs-kpi-capital-gain" class="mt-2 text-2xl font-bold tracking-tight tabular-nums text-purple-600">+$0/yr</div>
+          <div id="bs-kpi-capital-gain-sub" class="mt-1.5 text-[11px] text-slate-500">Yearly capital growth from productive assets</div>
+        </div>
+
+        <!-- 6. Total Productive Return Card (Auto-Summed Cash + Capital Gain) -->
+        <div class="fin-card fin-card-interactive p-4 sm:p-5 border-t-4 border-t-indigo-600">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Return / Yr</span>
+            <span class="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-indigo-50 text-indigo-700 border border-indigo-200">Cash + Gain</span>
+          </div>
+          <div id="bs-kpi-productive-return" class="mt-2 text-2xl font-bold tracking-tight tabular-nums text-indigo-600">+$0/yr</div>
+          <div id="bs-kpi-productive-sub" class="mt-1.5 text-[11px] text-slate-500">Sum of Annual Cash Return + Capital Gain</div>
         </div>
       </div>
 
-      <!-- Balance Sheet Visualizations (Moved higher for immediate executive insight) -->
+      <!-- Balance Sheet Visualizations -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="fin-card p-5">
           <div class="flex items-center justify-between mb-1">
@@ -265,9 +281,9 @@
         <div class="fin-card p-5">
           <div class="flex items-center justify-between mb-1">
             <h3 class="text-sm font-bold text-slate-900">Productive Asset Annual Returns</h3>
-            <span class="text-[11px] font-medium text-emerald-600">Passive Income</span>
+            <span class="text-[11px] font-medium text-indigo-600">Cash vs. Capital Gain</span>
           </div>
-          <p class="text-xs text-slate-500 mb-3">Projected yearly return ($) per productive asset</p>
+          <p class="text-xs text-slate-500 mb-3">Split Annual Cash Return ($) &amp; Annual Capital Gain ($) per asset</p>
           <div class="relative h-72">
             <canvas id="chart-productive-yield"></canvas>
           </div>
@@ -275,15 +291,15 @@
       </div>
 
       <!-- Assets & Liabilities Data Entry + Tables -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Assets Ledger Card -->
-        <div class="fin-card p-5 flex flex-col">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Assets Ledger Card (7 cols on large screens to comfortably display split rate & return columns) -->
+        <div class="fin-card p-5 flex flex-col lg:col-span-7">
           <div class="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-100">
             <div class="flex items-center gap-2.5">
               <span class="w-2.5 h-6 rounded-full bg-indigo-600"></span>
               <div>
                 <h2 class="text-base font-bold text-slate-900">Assets Ledger</h2>
-                <p class="text-xs text-slate-500">Categorize into Liquid or Fixed and flag Productive return rates</p>
+                <p class="text-xs text-slate-500">Split Productive Asset return rates into Yearly Cash Return &amp; Yearly Capital Growth (Total Return auto-summed)</p>
               </div>
             </div>
             <select
@@ -300,12 +316,12 @@
 
           <!-- Add / Edit Asset Form -->
           <form id="asset-entry-form" class="mt-4 grid grid-cols-1 sm:grid-cols-12 gap-2.5 bg-slate-50/90 p-3.5 rounded-xl border border-slate-200/80">
-            <div class="sm:col-span-4">
+            <div class="sm:col-span-5">
               <label for="asset-name-input" class="block text-[11px] font-semibold text-slate-600 mb-1">Asset Name</label>
               <input
                 type="text"
                 id="asset-name-input"
-                placeholder="e.g. S&amp;P 500 ETF"
+                placeholder="e.g. Global Equity Index ETF"
                 required
                 class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 focus:outline-none focus:border-indigo-500 bg-white"
               />
@@ -322,7 +338,7 @@
               </select>
             </div>
 
-            <div class="sm:col-span-3">
+            <div class="sm:col-span-4">
               <label for="asset-amount-input" class="block text-[11px] font-semibold text-slate-600 mb-1">Amount ($)</label>
               <input
                 type="number"
@@ -335,27 +351,56 @@
               />
             </div>
 
-            <div class="sm:col-span-2">
-              <label for="asset-return-input" class="block text-[11px] font-semibold text-slate-600 mb-1">Return (%/yr)</label>
+            <div class="sm:col-span-4">
+              <label for="asset-cash-return-input" class="block text-[11px] font-semibold text-emerald-700 mb-1">Yearly Cash Return Rate (%/yr)</label>
+              <input
+                type="number"
+                id="asset-cash-return-input"
+                value="2.5"
+                step="0.1"
+                class="w-full text-xs px-2.5 py-2 rounded-lg border border-emerald-300 focus:outline-none focus:border-emerald-600 bg-white disabled:bg-slate-100 disabled:text-slate-400 tabular-nums"
+              />
+            </div>
+
+            <div class="sm:col-span-4">
+              <label for="asset-capital-growth-input" class="block text-[11px] font-semibold text-purple-700 mb-1">Yearly Capital Growth Rate (%/yr)</label>
+              <input
+                type="number"
+                id="asset-capital-growth-input"
+                value="3.0"
+                step="0.1"
+                class="w-full text-xs px-2.5 py-2 rounded-lg border border-purple-300 focus:outline-none focus:border-purple-600 bg-white disabled:bg-slate-100 disabled:text-slate-400 tabular-nums"
+              />
+            </div>
+
+            <div class="sm:col-span-4">
+              <label for="asset-return-input" class="block text-[11px] font-semibold text-indigo-700 mb-1">Total Return Rate (%/yr • Auto)</label>
               <input
                 type="number"
                 id="asset-return-input"
-                value="5.0"
-                step="0.1"
-                class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 focus:outline-none focus:border-indigo-500 bg-white disabled:bg-slate-100 disabled:text-slate-400 tabular-nums"
+                value="5.50"
+                step="0.01"
+                readonly
+                title="Auto-calculated by summing Yearly Cash Return Rate + Yearly Capital Growth Rate"
+                class="w-full text-xs font-bold px-2.5 py-2 rounded-lg border border-indigo-200 bg-indigo-50/70 text-indigo-900 cursor-not-allowed tabular-nums"
               />
             </div>
 
             <div class="sm:col-span-12 flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-slate-200/60 mt-1">
-              <label class="inline-flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  id="asset-productive-input"
-                  checked
-                  class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4"
-                />
-                <span>Productive Asset (generates yearly return)</span>
-              </label>
+              <div class="flex flex-wrap items-center gap-2.5">
+                <label class="inline-flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    id="asset-productive-input"
+                    checked
+                    class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4"
+                  />
+                  <span>Productive Asset</span>
+                </label>
+                <span id="asset-total-return-formula" class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/80 tabular-nums">
+                  2.50% Cash + 3.00% Growth = 5.50% Total
+                </span>
+              </div>
 
               <div class="flex items-center gap-2">
                 <button
@@ -381,21 +426,24 @@
             <table class="w-full text-left border-collapse">
               <thead>
                 <tr class="border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wider text-slate-400 bg-slate-50/70">
-                  <th class="py-2.5 px-3">Asset Item</th>
-                  <th class="py-2.5 px-3">Category</th>
-                  <th class="py-2.5 px-3 text-right">Balance</th>
-                  <th class="py-2.5 px-3 text-center">Productivity</th>
-                  <th class="py-2.5 px-3 text-right">Est. Return</th>
-                  <th class="py-2.5 px-3 text-right">Actions</th>
+                  <th class="py-2.5 px-2.5">Asset Item</th>
+                  <th class="py-2.5 px-2.5">Category</th>
+                  <th class="py-2.5 px-2.5 text-right">Balance</th>
+                  <th class="py-2.5 px-2.5 text-center">Return Rates</th>
+                  <th class="py-2.5 px-2.5 text-right text-emerald-700">Annual Cash Return</th>
+                  <th class="py-2.5 px-2.5 text-right text-purple-700">Annual Capital Gain</th>
+                  <th class="py-2.5 px-2.5 text-right text-slate-700">Total Return</th>
+                  <th class="py-2.5 px-2.5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody id="assets-table-body"></tbody>
+              <tfoot id="assets-table-foot"></tfoot>
             </table>
           </div>
         </div>
 
-        <!-- Liabilities Ledger Card -->
-        <div class="fin-card p-5 flex flex-col">
+        <!-- Liabilities Ledger Card (5 cols on large screens) -->
+        <div class="fin-card p-5 flex flex-col lg:col-span-5">
           <div class="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-100">
             <div class="flex items-center gap-2.5">
               <span class="w-2.5 h-6 rounded-full bg-rose-500"></span>
@@ -508,10 +556,10 @@
         <div class="pb-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 class="text-base font-bold text-slate-900">Financial Health Ratios &amp; Institutional Benchmarks</h2>
-            <p class="text-xs text-slate-500">Automated liquidity, solvency, leverage, and asset productivity diagnostics</p>
+            <p class="text-xs text-slate-500">Automated liquidity, solvency, leverage, and split Productive Cash Return &amp; Capital Growth diagnostics</p>
           </div>
         </div>
-        <div id="bs-ratios-grid" class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        <div id="bs-ratios-grid" class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
       </div>
     </section>
 
@@ -558,13 +606,18 @@
         </div>
       </div>
 
-      <!-- Forecast Parameters Input Panel (Grouped for clarity while preserving exact field sequence) -->
+      <!-- Forecast Parameters Input Panel -->
       <div class="fin-card p-5 sm:p-6">
         <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-100">
           <div>
-            <h2 class="text-base font-bold text-slate-900">Financial Status &amp; Forecast Parameters</h2>
-            <p class="text-xs text-slate-500">
-              Uninvested working income is spent each year. All remaining savings after cash inflows and outflows earn Yearly Cash Return &amp; Capital Growth.
+            <div class="flex flex-wrap items-center gap-2">
+              <h2 class="text-base font-bold text-slate-900">Financial Status &amp; Forecast Parameters</h2>
+              <span id="cf-total-return-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 tabular-nums">
+                Total Return Rate: 8.50%/yr (2.50% Cash + 6.00% Cap. Growth)
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Uninvested working income is spent each year. All remaining savings after cash inflows and outflows earn Yearly Cash Return &amp; Yearly Capital Growth.
             </p>
           </div>
           <button
@@ -572,7 +625,7 @@
             id="btn-sync-from-bs"
             class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 transition-colors"
           >
-            <span>⟳ Sync Initial Savings from Productive Assets</span>
+            <span>⟳ Sync Initial Savings &amp; Return Rates from Productive Assets</span>
           </button>
         </div>
 
@@ -675,10 +728,10 @@
           </div>
 
           <!-- 6. Yearly Cash Return Rate -->
-          <div class="p-3.5 rounded-xl bg-slate-50/80 border border-slate-200/80 hover:border-slate-300 transition-colors">
+          <div class="p-3.5 rounded-xl bg-emerald-50/30 border border-emerald-200/80 hover:border-emerald-300 transition-colors">
             <div class="flex items-center justify-between">
-              <label for="cf-cash-return-rate" class="block text-xs font-semibold text-slate-700">Yearly Cash Return Rate</label>
-              <span class="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">Yield</span>
+              <label for="cf-cash-return-rate" class="block text-xs font-semibold text-emerald-950">Yearly Cash Return Rate</label>
+              <span class="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">Cash Yield</span>
             </div>
             <div class="mt-1.5 input-shell px-3 py-1.5">
               <input
@@ -689,14 +742,14 @@
               />
               <span class="text-xs font-semibold text-slate-400 select-none">%/yr</span>
             </div>
-            <span class="block mt-1.5 text-[11px] text-slate-500">Applied to remaining savings after cashflows</span>
+            <span class="block mt-1.5 text-[11px] text-emerald-800/80">Annual cash return on remaining savings</span>
           </div>
 
           <!-- 7. Yearly Capital Growth Rate -->
-          <div class="p-3.5 rounded-xl bg-slate-50/80 border border-slate-200/80 hover:border-slate-300 transition-colors">
+          <div class="p-3.5 rounded-xl bg-purple-50/30 border border-purple-200/80 hover:border-purple-300 transition-colors">
             <div class="flex items-center justify-between">
-              <label for="cf-capital-growth-rate" class="block text-xs font-semibold text-slate-700">Yearly Capital Growth</label>
-              <span class="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-purple-100 text-purple-700">Growth</span>
+              <label for="cf-capital-growth-rate" class="block text-xs font-semibold text-purple-950">Yearly Capital Growth Rate</label>
+              <span class="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-purple-100 text-purple-700">Cap. Growth</span>
             </div>
             <div class="mt-1.5 input-shell px-3 py-1.5">
               <input
@@ -707,7 +760,7 @@
               />
               <span class="text-xs font-semibold text-slate-400 select-none">%/yr</span>
             </div>
-            <span class="block mt-1.5 text-[11px] text-slate-500">Applied to remaining savings after cashflows</span>
+            <span class="block mt-1.5 text-[11px] text-purple-800/80">Annual capital gain on remaining savings</span>
           </div>
 
           <!-- 8. Expected Inflation Rate -->
@@ -827,7 +880,7 @@
             <h3 class="text-sm font-bold text-slate-900">Yearly Cashflow Components</h3>
             <span class="text-[11px] font-medium text-emerald-600">Stacked Flows</span>
           </div>
-          <p class="text-xs text-slate-500 mb-3">Invested Salary, Lump-Sum Pension, Returns &amp; Outflows</p>
+          <p class="text-xs text-slate-500 mb-3">Invested Salary, Pension, Annual Cash Return, Annual Capital Gain &amp; Outflows</p>
           <div class="relative h-72">
             <canvas id="chart-cashflow-components"></canvas>
           </div>
@@ -835,10 +888,10 @@
 
         <div class="fin-card p-5">
           <div class="flex items-center justify-between mb-1">
-            <h3 class="text-sm font-bold text-slate-900">Inflows &amp; Returns vs. Spending</h3>
-            <span class="text-[11px] font-medium text-rose-600">Crossover</span>
+            <h3 class="text-sm font-bold text-slate-900">Inflows, Cash Return &amp; Capital Gain vs. Spending</h3>
+            <span class="text-[11px] font-medium text-rose-600">Split Returns Crossover</span>
           </div>
-          <p class="text-xs text-slate-500 mb-3">Comparing active salary/pension, investment return, and spending</p>
+          <p class="text-xs text-slate-500 mb-3">Active salary/pension, split Annual Cash Return &amp; Annual Capital Gain, and spending</p>
           <div class="relative h-72">
             <canvas id="chart-income-vs-spending"></canvas>
           </div>
@@ -851,7 +904,7 @@
           <div>
             <h2 class="text-base font-bold text-slate-900">Year-by-Year Cashflow &amp; Savings Ledger</h2>
             <p class="text-xs text-slate-500">
-              Remaining Savings = Begin Savings + Net Inflow/Outflow; Cash Return &amp; Capital Growth apply to Remaining Savings (🎯 marks Retirement Age)
+              Remaining Savings = Begin Savings + Net Inflow/Outflow; Annual Cash Return &amp; Annual Capital Gain apply to Remaining Savings (🎯 marks Retirement Age)
             </p>
           </div>
           <select
@@ -877,13 +930,14 @@
                 <th class="py-3 px-3 text-right bg-slate-100/95">Spending Outflow</th>
                 <th class="py-3 px-3 text-right bg-slate-100/95">Net Inflow/Outflow</th>
                 <th class="py-3 px-3 text-right bg-slate-100/95">Remaining Savings</th>
-                <th class="py-3 px-3 text-right bg-slate-100/95">Cash Return</th>
-                <th class="py-3 px-3 text-right bg-slate-100/95">Capital Growth</th>
+                <th class="py-3 px-3 text-right bg-slate-100/95 text-emerald-700">Annual Cash Return</th>
+                <th class="py-3 px-3 text-right bg-slate-100/95 text-purple-700">Annual Capital Gain</th>
                 <th class="py-3 px-3 text-right bg-slate-100/95">End Savings (Nom.)</th>
                 <th class="py-3 px-3 text-right bg-slate-100/95">End Savings (PV)</th>
               </tr>
             </thead>
             <tbody id="cashflow-forecast-tbody"></tbody>
+            <tfoot id="cashflow-forecast-tfoot"></tfoot>
           </table>
         </div>
       </div>

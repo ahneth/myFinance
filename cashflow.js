@@ -2,7 +2,8 @@
  * ============================================================================
  * myFinance - Yearly Cashflows & Forecast Module (cashflow.js)
  * Auto-calculates year-by-year cashflows, inflation-adjusted spendings,
- * pension inflows, cash returns, and capital growth from Current Age to Decease.
+ * pension inflows, annual cash returns, and annual capital gains from
+ * Current Age to Decease.
  *
  * Core Model:
  * - Initial Savings entered right after Current Age.
@@ -16,7 +17,8 @@
  *   grown by Expected Inflation Rate.
  * - All remaining Savings after cash inflows and outflows
  *   (RemainingSavings = BeginSavings + NetCashInflowOutflow) are subject to
- *   Yearly Cash Return Rate and Yearly Capital Growth Rate.
+ *   Yearly Cash Return Rate and Yearly Capital Growth Rate (auto-summed into
+ *   Total Return Rate).
  * ============================================================================
  */
 (function (global) {
@@ -45,6 +47,26 @@
     return sign + '$' + Math.abs(Math.round(val)).toLocaleString('en-US');
   }
 
+  function updateTotalReturnDisplay() {
+    const p = myFinance.Storage.getState().cashflowParams;
+    const cashRate = Number(p.cashReturnRate) || 0;
+    const capRate = Number(p.capitalGrowthRate) || 0;
+    const totalRate = cashRate + capRate;
+
+
+    const totalBadgeEl = document.getElementById('cf-total-return-badge');
+    if (totalBadgeEl) {
+      totalBadgeEl.textContent =
+        'Total Return Rate: ' +
+        totalRate.toFixed(2) +
+        '%/yr (' +
+        cashRate.toFixed(2) +
+        '% Cash + ' +
+        capRate.toFixed(2) +
+        '% Cap. Growth)';
+    }
+  }
+
   function populateInputsFromState() {
     const p = myFinance.Storage.getState().cashflowParams;
     INPUT_IDS.forEach(function (item) {
@@ -53,6 +75,7 @@
         el.value = p[item.key];
       }
     });
+    updateTotalReturnDisplay();
   }
 
   function readInputsToState() {
@@ -77,6 +100,7 @@
     if (p.lifeExpectancy <= p.retirementAge) p.lifeExpectancy = p.retirementAge + 1;
     if (p.lifeExpectancy > 120) p.lifeExpectancy = 120;
 
+    updateTotalReturnDisplay();
     myFinance.Storage.save();
   }
 
@@ -89,6 +113,7 @@
     const invPct = (Number(p.investmentPercentage) || 0) / 100;
     const cashRate = (Number(p.cashReturnRate) || 0) / 100;
     const capGrowthRate = (Number(p.capitalGrowthRate) || 0) / 100;
+    const totalReturnRate = (Number(p.cashReturnRate) || 0) + (Number(p.capitalGrowthRate) || 0);
     const infRate = (Number(p.inflationRate) || 0) / 100;
     const expectedPension = Math.max(0, Number(p.expectedPension) || 0);
 
@@ -101,6 +126,8 @@
     let firstRetirementSpending = null;
     let firstRetirementPension = null;
     let depletionAge = null;
+    let cumulativeCashReturn = 0;
+    let cumulativeCapitalGain = 0;
 
     for (let t = 0; t <= horizon; t++) {
       const year = startYear + t;
@@ -116,27 +143,27 @@
       const pension = age === p.retirementAge ? expectedPension : 0;
 
       // 2. Cash Outflows (Spent Amount)
-      // - Working years: remaining amount after income investment percentage is all spent
-      // - Retirement years: Yearly Spending in Retirement (PV) grown by inflation rate
       const inflationAdjustedRetirementSpending = p.retirementSpendingPV * inflationFactor;
       const activeSavings = isRetired ? 0 : income * invPct;
       const spending = isRetired ? inflationAdjustedRetirementSpending : income * (1 - invPct);
 
       // 3. Net Cash Inflow / Outflow into Savings before investment returns
-      // - Working: Income - WorkingSpending = activeSavings (Income * invPct)
-      // - Retirement: LumpSumPension (at age === retirementAge, else 0) - RetirementSpending
       const netInflowOutflow = isRetired ? pension - spending : activeSavings;
 
       // 4. All remaining Savings after cash inflows and outflows are subject to
-      //    yearly cash return and yearly capital growth
+      //    yearly cash return rate and yearly capital growth rate
       const remainingSavings = beginSavings + netInflowOutflow;
       const productiveBase = Math.max(0, remainingSavings);
       const cashReturn = productiveBase * cashRate;
       const capitalGrowth = productiveBase * capGrowthRate;
+      const totalInvestmentReturn = cashReturn + capitalGrowth;
+
+      cumulativeCashReturn += cashReturn;
+      cumulativeCapitalGain += capitalGrowth;
 
       // 5. Total Net Change in Savings & Ending Savings
-      const netCashflow = netInflowOutflow + cashReturn + capitalGrowth;
-      const endSavings = remainingSavings + cashReturn + capitalGrowth;
+      const netCashflow = netInflowOutflow + totalInvestmentReturn;
+      const endSavings = remainingSavings + totalInvestmentReturn;
       const endSavingsPV = endSavings / Math.pow(1 + infRate, t + 1);
 
       if (age === p.retirementAge) {
@@ -165,6 +192,7 @@
         remainingSavings,
         cashReturn,
         capitalGrowth,
+        totalInvestmentReturn,
         netCashflow,
         endSavings,
         endSavingsPV
@@ -181,6 +209,7 @@
 
     return {
       params: p,
+      totalReturnRate: totalReturnRate,
       rows: rows,
       retirementNestEggNominal:
         retirementNestEggNominal !== null ? retirementNestEggNominal : finalRow.endSavings,
@@ -190,6 +219,9 @@
       firstRetirementPension: firstRetirementPension || 0,
       finalEstateNominal: finalRow.endSavings,
       finalEstatePV: finalRow.endSavingsPV,
+      cumulativeCashReturn: cumulativeCashReturn,
+      cumulativeCapitalGain: cumulativeCapitalGain,
+      cumulativeTotalReturn: cumulativeCashReturn + cumulativeCapitalGain,
       depletionAge: depletionAge
     };
   }
@@ -231,32 +263,53 @@
     }
     if (finalSubEl) {
       finalSubEl.textContent =
-        'At Age ' + p.lifeExpectancy + ' • PV: ' + formatMoney(forecast.finalEstatePV);
+        'At Age ' +
+        p.lifeExpectancy +
+        ' • PV: ' +
+        formatMoney(forecast.finalEstatePV) +
+        ' • Cash Ret: +' +
+        formatMoney(forecast.cumulativeCashReturn) +
+        ' | Cap Gain: +' +
+        formatMoney(forecast.cumulativeCapitalGain);
     }
 
     if (statusEl && statusSubEl) {
+      const cashR = (Number(p.cashReturnRate) || 0).toFixed(2);
+      const capR = (Number(p.capitalGrowthRate) || 0).toFixed(2);
+      const totR = ((Number(p.cashReturnRate) || 0) + (Number(p.capitalGrowthRate) || 0)).toFixed(2);
       if (forecast.depletionAge === null) {
         statusEl.textContent = 'Sustainable ✓';
         statusEl.className = 'mt-2 text-2xl sm:text-3xl font-bold tracking-tight tabular-nums text-emerald-600';
         statusSubEl.textContent =
-          'Savings last through Age ' +
+          'Through Age ' +
           p.lifeExpectancy +
           ' (' +
-          (p.cashReturnRate + p.capitalGrowthRate).toFixed(1) +
-          '% combined return)';
+          totR +
+          '% Total = ' +
+          cashR +
+          '% Cash + ' +
+          capR +
+          '% Growth)';
       } else {
         statusEl.textContent = 'Shortfall @ Age ' + forecast.depletionAge;
         statusEl.className = 'mt-2 text-2xl sm:text-3xl font-bold tracking-tight tabular-nums text-rose-600';
         statusSubEl.textContent =
-          'Portfolio turns negative at Age ' +
+          'Turns negative at Age ' +
           forecast.depletionAge +
-          ' — adjust savings %, pension, or retirement age';
+          ' (' +
+          totR +
+          '% Total = ' +
+          cashR +
+          '% Cash + ' +
+          capR +
+          '% Growth)';
       }
     }
   }
 
   function renderForecastTable(forecast) {
     const tbody = document.getElementById('cashflow-forecast-tbody');
+    const tfoot = document.getElementById('cashflow-forecast-tfoot');
     if (!tbody) return;
 
     const filterEl = document.getElementById('cf-phase-filter');
@@ -266,6 +319,12 @@
       if (phaseFilter === 'ALL') return true;
       return r.phase.toUpperCase() === phaseFilter;
     });
+
+    let sumInflow = 0;
+    let sumSpending = 0;
+    let sumNetFlow = 0;
+    let sumCashReturn = 0;
+    let sumCapGain = 0;
 
     tbody.innerHTML = rows
       .map(function (r) {
@@ -285,6 +344,12 @@
             ? '<span class="text-sky-700" title="One-Time Lump Sum Expected Pension at Retirement Age">' + formatMoney(r.pension) + '</span>'
             : '—'
           : formatMoney(r.income);
+
+        sumInflow += r.isRetired ? r.pension : r.income;
+        sumSpending += r.spending;
+        sumNetFlow += r.netInflowOutflow;
+        sumCashReturn += r.cashReturn;
+        sumCapGain += r.capitalGrowth;
 
         return (
           '<tr class="' + rowHighlight + ' hover:bg-slate-100/70 transition-colors text-xs sm:text-sm">' +
@@ -306,7 +371,7 @@
               formatMoney(r.remainingSavings) +
             '</td>' +
             '<td class="py-2.5 px-3 text-right font-mono text-emerald-600">+' + formatMoney(r.cashReturn) + '</td>' +
-            '<td class="py-2.5 px-3 text-right font-mono text-indigo-600">+' + formatMoney(r.capitalGrowth) + '</td>' +
+            '<td class="py-2.5 px-3 text-right font-mono text-purple-600">+' + formatMoney(r.capitalGrowth) + '</td>' +
             '<td class="py-2.5 px-3 text-right font-mono font-bold ' +
               (r.endSavings >= 0 ? 'text-slate-900' : 'text-rose-600') +
             '">' +
@@ -317,10 +382,33 @@
         );
       })
       .join('');
+
+    if (tfoot && rows.length > 0) {
+      const lastRow = rows[rows.length - 1];
+      tfoot.innerHTML =
+        '<tr class="bg-slate-100/95 border-t-2 border-slate-300 text-xs font-bold text-slate-900 font-mono">' +
+          '<td class="py-2.5 px-3 font-sans" colspan="4">Cumulative Horizon Totals (' + rows.length + ' yrs)</td>' +
+          '<td class="py-2.5 px-3 text-right text-slate-800">' + formatMoney(sumInflow) + '</td>' +
+          '<td class="py-2.5 px-3 text-right text-rose-600">-' + formatMoney(sumSpending) + '</td>' +
+          '<td class="py-2.5 px-3 text-right ' + (sumNetFlow >= 0 ? 'text-sky-700' : 'text-rose-600') + '">' +
+            (sumNetFlow >= 0 ? '+' : '') + formatMoney(sumNetFlow) +
+          '</td>' +
+          '<td class="py-2.5 px-3 text-right text-slate-500">—</td>' +
+          '<td class="py-2.5 px-3 text-right text-emerald-700">+' + formatMoney(sumCashReturn) + '</td>' +
+          '<td class="py-2.5 px-3 text-right text-purple-700">+' + formatMoney(sumCapGain) + '</td>' +
+          '<td class="py-2.5 px-3 text-right ' + (lastRow.endSavings >= 0 ? 'text-slate-900' : 'text-rose-600') + '">' +
+            formatMoney(lastRow.endSavings) +
+          '</td>' +
+          '<td class="py-2.5 px-3 text-right text-teal-700">' + formatMoney(lastRow.endSavingsPV) + '</td>' +
+        '</tr>';
+    } else if (tfoot) {
+      tfoot.innerHTML = '';
+    }
   }
 
   function refreshAll(logEvent) {
     const forecast = computeForecast();
+    updateTotalReturnDisplay();
     renderForecastSummary(forecast);
     renderForecastTable(forecast);
     if (myFinance.Charts && myFinance.Charts.renderCashflowCharts) {
@@ -330,6 +418,9 @@
       myFinance.Logger.info('Cashflow', 'Recalculated yearly cashflow forecast (Age ' +
         forecast.params.currentAge + ' to ' + forecast.params.lifeExpectancy + ').', {
         initialSavings: Math.round(forecast.params.initialSavings),
+        cashReturnRate: forecast.params.cashReturnRate,
+        capitalGrowthRate: forecast.params.capitalGrowthRate,
+        totalReturnRate: Number(forecast.totalReturnRate.toFixed(2)),
         expectedPension: Math.round(forecast.params.expectedPension),
         retirementNestEggNominal: Math.round(forecast.retirementNestEggNominal),
         finalEstateNominal: Math.round(forecast.finalEstateNominal),
@@ -360,7 +451,7 @@
       });
     }
 
-    // Sync Initial Savings from Balance Sheet Productive Assets
+    // Sync Initial Savings & Weighted Return Rates from Balance Sheet Productive Assets
     const syncBtn = document.getElementById('btn-sync-from-bs');
     if (syncBtn) {
       syncBtn.addEventListener('click', function () {
@@ -370,20 +461,32 @@
         const syncedVal = Math.max(0, Math.round(bs.productiveAssets));
         state.cashflowParams.initialSavings = syncedVal;
         state.cashflowParams.startingSavings = syncedVal;
+        if (bs.productiveAssets > 0) {
+          state.cashflowParams.cashReturnRate = Number(bs.weightedProductiveCashReturnRate.toFixed(2));
+          state.cashflowParams.capitalGrowthRate = Number(bs.weightedProductiveCapitalGrowthRate.toFixed(2));
+        }
         myFinance.Storage.save();
         populateInputsFromState();
         refreshAll(true);
         myFinance.Logger.info(
           'Cashflow',
-          'Synced Initial Savings with Productive Assets from Balance Sheet ($' +
+          'Synced Initial Savings ($' +
             syncedVal.toLocaleString() +
-            ').'
+            '), Cash Return Rate (' +
+            state.cashflowParams.cashReturnRate +
+            '%), and Capital Growth Rate (' +
+            state.cashflowParams.capitalGrowthRate +
+            '%) from Balance Sheet Productive Assets.'
         );
         if (myFinance.App && myFinance.App.showToast) {
           myFinance.App.showToast(
-            'Synced Initial Savings to Productive Assets ($' +
+            'Synced Initial Savings ($' +
               syncedVal.toLocaleString() +
-              ')',
+              ') & Return Rates (' +
+              state.cashflowParams.cashReturnRate.toFixed(2) +
+              '% Cash + ' +
+              state.cashflowParams.capitalGrowthRate.toFixed(2) +
+              '% Cap. Growth)',
             'success'
           );
         }

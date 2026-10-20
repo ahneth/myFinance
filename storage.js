@@ -15,7 +15,7 @@
     return {
       meta: {
         appName: 'myFinance',
-        version: '1.1.0',
+        version: '1.2.0',
         lastUpdated: new Date().toISOString()
       },
       assets: [
@@ -25,6 +25,9 @@
           category: 'Liquid',
           amount: 45000,
           productive: true,
+          cashReturnRate: 4.2,
+          capitalGrowthRate: 0.0,
+          totalReturnRate: 4.2,
           returnRate: 4.2
         },
         {
@@ -33,6 +36,9 @@
           category: 'Liquid',
           amount: 15000,
           productive: false,
+          cashReturnRate: 0.0,
+          capitalGrowthRate: 0.0,
+          totalReturnRate: 0.0,
           returnRate: 0.0
         },
         {
@@ -41,6 +47,9 @@
           category: 'Liquid',
           amount: 185000,
           productive: true,
+          cashReturnRate: 2.0,
+          capitalGrowthRate: 6.0,
+          totalReturnRate: 8.0,
           returnRate: 8.0
         },
         {
@@ -49,6 +58,9 @@
           category: 'Liquid',
           amount: 35000,
           productive: true,
+          cashReturnRate: 4.8,
+          capitalGrowthRate: 0.0,
+          totalReturnRate: 4.8,
           returnRate: 4.8
         },
         {
@@ -57,6 +69,9 @@
           category: 'Fixed',
           amount: 620000,
           productive: false,
+          cashReturnRate: 0.0,
+          capitalGrowthRate: 0.0,
+          totalReturnRate: 0.0,
           returnRate: 0.0
         },
         {
@@ -65,6 +80,9 @@
           category: 'Fixed',
           amount: 210000,
           productive: true,
+          cashReturnRate: 1.5,
+          capitalGrowthRate: 5.0,
+          totalReturnRate: 6.5,
           returnRate: 6.5
         },
         {
@@ -73,6 +91,9 @@
           category: 'Fixed',
           amount: 340000,
           productive: true,
+          cashReturnRate: 3.2,
+          capitalGrowthRate: 2.2,
+          totalReturnRate: 5.4,
           returnRate: 5.4
         }
       ],
@@ -138,13 +159,69 @@
       String(prodRaw).toLowerCase() === 'yes' ||
       String(prodRaw) === '1';
     const amount = Math.max(0, parseFloat(raw.amount !== undefined ? raw.amount : raw.Amount) || 0);
-    const rate = parseFloat(
-      raw.returnRate !== undefined
-        ? raw.returnRate
-        : raw['Yearly Return Rate (%)'] !== undefined
-        ? raw['Yearly Return Rate (%)']
-        : 0
-    ) || 0;
+
+    const hasSplitCash =
+      raw.cashReturnRate !== undefined ||
+      raw['Yearly Cash Return Rate (%)'] !== undefined ||
+      raw['Cash Return Rate (%)'] !== undefined;
+    const hasSplitCap =
+      raw.capitalGrowthRate !== undefined ||
+      raw['Yearly Capital Growth Rate (%)'] !== undefined ||
+      raw['Capital Growth Rate (%)'] !== undefined;
+
+    let cashReturnRate = 0;
+    let capitalGrowthRate = 0;
+
+    if (hasSplitCash || hasSplitCap) {
+      cashReturnRate =
+        parseFloat(
+          raw.cashReturnRate !== undefined
+            ? raw.cashReturnRate
+            : raw['Yearly Cash Return Rate (%)'] !== undefined
+            ? raw['Yearly Cash Return Rate (%)']
+            : raw['Cash Return Rate (%)']
+        ) || 0;
+      capitalGrowthRate =
+        parseFloat(
+          raw.capitalGrowthRate !== undefined
+            ? raw.capitalGrowthRate
+            : raw['Yearly Capital Growth Rate (%)'] !== undefined
+            ? raw['Yearly Capital Growth Rate (%)']
+            : raw['Capital Growth Rate (%)']
+        ) || 0;
+    } else {
+      const legacyRate =
+        parseFloat(
+          raw.returnRate !== undefined
+            ? raw.returnRate
+            : raw.totalReturnRate !== undefined
+            ? raw.totalReturnRate
+            : raw['Total Return Rate (%)'] !== undefined
+            ? raw['Total Return Rate (%)']
+            : raw['Yearly Return Rate (%)'] !== undefined
+            ? raw['Yearly Return Rate (%)']
+            : 0
+        ) || 0;
+
+      // Check if this matches a default starter asset ID to preserve realistic cash vs. capital split on upgrade
+      const defaultMatch = getDefaultState().assets.find(
+        (d) => d.id === String(raw.id || raw.ID || '') && Math.abs(d.returnRate - legacyRate) < 0.01
+      );
+      if (defaultMatch) {
+        cashReturnRate = defaultMatch.cashReturnRate;
+        capitalGrowthRate = defaultMatch.capitalGrowthRate;
+      } else {
+        cashReturnRate = legacyRate;
+        capitalGrowthRate = 0;
+      }
+    }
+
+    if (!productive) {
+      cashReturnRate = 0;
+      capitalGrowthRate = 0;
+    }
+
+    const totalReturnRate = Number((cashReturnRate + capitalGrowthRate).toFixed(4));
 
     return {
       id: String(raw.id || raw.ID || 'ast_' + Date.now() + '_' + idx),
@@ -152,7 +229,10 @@
       category: category,
       amount: amount,
       productive: productive,
-      returnRate: productive ? rate : rate
+      cashReturnRate: cashReturnRate,
+      capitalGrowthRate: capitalGrowthRate,
+      totalReturnRate: totalReturnRate,
+      returnRate: totalReturnRate
     };
   }
 
@@ -236,7 +316,7 @@
       appState = {
         meta: {
           appName: 'myFinance',
-          version: '1.1.0',
+          version: '1.2.0',
           lastUpdated: (parsed.meta && parsed.meta.lastUpdated) || new Date().toISOString()
         },
         assets: Array.isArray(parsed.assets) ? parsed.assets.map(sanitizeAsset) : getDefaultState().assets,
@@ -289,17 +369,28 @@
 
       const wb = global.XLSX.utils.book_new();
 
-      // 1. Assets Sheet
+      // 1. Assets Sheet (with split Yearly Cash Return Rate, Yearly Capital Growth Rate, Total Return Rate, Annual Cash Return, Annual Capital Gain)
       const assetsRows = appState.assets.map(function (a) {
-        const annualReturn = a.productive ? (a.amount * a.returnRate) / 100 : 0;
+        const amt = Number(a.amount) || 0;
+        const cashRate = a.productive ? Number(a.cashReturnRate) || 0 : 0;
+        const capRate = a.productive ? Number(a.capitalGrowthRate) || 0 : 0;
+        const totalRate = Number((cashRate + capRate).toFixed(4));
+        const annualCashReturn = a.productive ? (amt * cashRate) / 100 : 0;
+        const annualCapitalGain = a.productive ? (amt * capRate) / 100 : 0;
+        const annualTotalReturn = annualCashReturn + annualCapitalGain;
+
         return {
           ID: a.id,
           Name: a.name,
           Category: a.category,
-          Amount: a.amount,
+          Amount: amt,
           Productive: a.productive ? 'Yes' : 'No',
-          'Yearly Return Rate (%)': a.returnRate,
-          'Est. Annual Return ($)': Number(annualReturn.toFixed(2))
+          'Yearly Cash Return Rate (%)': Number(cashRate.toFixed(2)),
+          'Yearly Capital Growth Rate (%)': Number(capRate.toFixed(2)),
+          'Total Return Rate (%)': Number(totalRate.toFixed(2)),
+          'Est. Annual Cash Return ($)': Number(annualCashReturn.toFixed(2)),
+          'Est. Annual Capital Gain ($)': Number(annualCapitalGain.toFixed(2)),
+          'Est. Total Annual Return ($)': Number(annualTotalReturn.toFixed(2))
         };
       });
       const wsAssets = global.XLSX.utils.json_to_sheet(assetsRows);
@@ -328,6 +419,7 @@
         { Key: 'investmentPercentage', Parameter: 'Investment Percentage', Value: p.investmentPercentage, Unit: '% of income' },
         { Key: 'cashReturnRate', Parameter: 'Yearly Cash Return Rate', Value: p.cashReturnRate, Unit: '% per year' },
         { Key: 'capitalGrowthRate', Parameter: 'Yearly Capital Growth Rate', Value: p.capitalGrowthRate, Unit: '% per year' },
+        { Key: 'totalReturnRate', Parameter: 'Total Return Rate (Auto-Summed)', Value: Number(((Number(p.cashReturnRate) || 0) + (Number(p.capitalGrowthRate) || 0)).toFixed(2)), Unit: '% per year' },
         { Key: 'inflationRate', Parameter: 'Expected Inflation Rate', Value: p.inflationRate, Unit: '% per year' },
         { Key: 'retirementAge', Parameter: 'Target Retirement Age', Value: p.retirementAge, Unit: 'Years' },
         { Key: 'expectedPension', Parameter: 'Expected Pension (Lump Sum)', Value: p.expectedPension, Unit: 'Currency ($ Lump Sum at Retirement)' },
@@ -341,15 +433,24 @@
       if (myFinance.BalanceSheet && myFinance.BalanceSheet.computeSummary) {
         const bs = myFinance.BalanceSheet.computeSummary();
         const summaryRows = [
-          { Metric: 'Total Liquid Assets', Value: bs.liquidAssets },
-          { Metric: 'Total Fixed Assets', Value: bs.fixedAssets },
-          { Metric: 'Total Assets', Value: bs.totalAssets },
-          { Metric: 'Productive Assets', Value: bs.productiveAssets },
-          { Metric: 'Expected Yearly Return from Productive Assets ($)', Value: Number(bs.totalAnnualReturn.toFixed(2)) },
-          { Metric: 'Short-Term Liabilities', Value: bs.shortTermLiabilities },
-          { Metric: 'Long-Term Liabilities', Value: bs.longTermLiabilities },
-          { Metric: 'Total Liabilities', Value: bs.totalLiabilities },
-          { Metric: 'Net Worth', Value: bs.netWorth },
+          { Metric: 'Total Liquid Assets ($)', Value: bs.liquidAssets },
+          { Metric: 'Total Fixed Assets ($)', Value: bs.fixedAssets },
+          { Metric: 'Total Assets ($)', Value: bs.totalAssets },
+          { Metric: 'Productive Assets ($)', Value: bs.productiveAssets },
+          { Metric: 'Non-Productive Assets ($)', Value: bs.nonProductiveAssets },
+          { Metric: 'Weighted Yearly Cash Return Rate on Productive Assets (%)', Value: Number(bs.weightedProductiveCashReturnRate.toFixed(2)) },
+          { Metric: 'Weighted Yearly Capital Growth Rate on Productive Assets (%)', Value: Number(bs.weightedProductiveCapitalGrowthRate.toFixed(2)) },
+          { Metric: 'Weighted Total Return Rate on Productive Assets (%)', Value: Number(bs.weightedProductiveYield.toFixed(2)) },
+          { Metric: 'Annual Cash Returns from Productive Assets ($)', Value: Number(bs.totalAnnualCashReturn.toFixed(2)) },
+          { Metric: 'Annual Capital Gain from Productive Assets ($)', Value: Number(bs.totalAnnualCapitalGain.toFixed(2)) },
+          { Metric: 'Total Annual Return from Productive Assets ($)', Value: Number(bs.totalAnnualReturn.toFixed(2)) },
+          { Metric: 'Effective Cash Return Rate on Total Assets (%)', Value: Number(bs.effectiveTotalAssetCashYield.toFixed(2)) },
+          { Metric: 'Effective Capital Growth Rate on Total Assets (%)', Value: Number(bs.effectiveTotalAssetCapitalGrowth.toFixed(2)) },
+          { Metric: 'Effective Total Return Rate on Total Assets (%)', Value: Number(bs.effectiveTotalAssetYield.toFixed(2)) },
+          { Metric: 'Short-Term Liabilities ($)', Value: bs.shortTermLiabilities },
+          { Metric: 'Long-Term Liabilities ($)', Value: bs.longTermLiabilities },
+          { Metric: 'Total Liabilities ($)', Value: bs.totalLiabilities },
+          { Metric: 'Net Worth ($)', Value: bs.netWorth },
           { Metric: 'Liquidity Ratio (Liquid / Short-Term Debt)', Value: Number(bs.liquidityRatio.toFixed(2)) },
           { Metric: 'Debt-to-Asset Ratio (%)', Value: Number(bs.debtToAssetRatio.toFixed(2)) },
           { Metric: 'Solvency Ratio (%)', Value: Number(bs.solvencyRatio.toFixed(2)) },
@@ -373,8 +474,9 @@
             'Spending Outflow ($)': Number(r.spending.toFixed(2)),
             'Net Cash Inflow / Outflow ($)': Number(r.netInflowOutflow.toFixed(2)),
             'Remaining Savings After Cashflows ($)': Number(r.remainingSavings.toFixed(2)),
-            'Cash Return ($)': Number(r.cashReturn.toFixed(2)),
-            'Capital Growth ($)': Number(r.capitalGrowth.toFixed(2)),
+            'Annual Cash Return ($)': Number(r.cashReturn.toFixed(2)),
+            'Annual Capital Gain ($)': Number(r.capitalGrowth.toFixed(2)),
+            'Total Investment Return ($)': Number((r.cashReturn + r.capitalGrowth).toFixed(2)),
             'Ending Savings Nominal ($)': Number(r.endSavings.toFixed(2)),
             'Ending Savings Present Value ($)': Number(r.endSavingsPV.toFixed(2))
           };
@@ -451,7 +553,7 @@
             rawParams.forEach(function (row) {
               const key = row.Key || row.key;
               const val = row.Value !== undefined ? row.Value : row.value;
-              if (key && val !== undefined) {
+              if (key && key !== 'totalReturnRate' && val !== undefined) {
                 paramMap[key] = parseFloat(val);
               }
             });

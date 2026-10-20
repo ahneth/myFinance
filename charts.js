@@ -2,7 +2,8 @@
  * ============================================================================
  * myFinance - Chart.js Visualization Module (charts.js)
  * Renders and updates interactive financial health charts on the Balance Sheet
- * and Yearly Cashflows & Forecast tabs with executive fintech styling.
+ * and Yearly Cashflows & Forecast tabs with split Annual Cash Returns and
+ * Annual Capital Gains.
  * ============================================================================
  */
 (function (global) {
@@ -28,7 +29,9 @@
     padding: 11,
     cornerRadius: 10,
     titleFont: { family: 'Inter, sans-serif', size: 12, weight: '600' },
-    bodyFont: { family: 'JetBrains Mono, monospace', size: 11 }
+    bodyFont: { family: 'JetBrains Mono, monospace', size: 11 },
+    footerFont: { family: 'JetBrains Mono, monospace', size: 11, weight: '600' },
+    footerColor: '#a5b4fc'
   };
 
   function formatCompactCurrency(val) {
@@ -53,18 +56,42 @@
           liqNonProd = 0,
           fixProd = 0,
           fixNonProd = 0;
+        let liqCashRet = 0,
+          liqCapGain = 0,
+          fixCashRet = 0,
+          fixCapGain = 0;
 
         assets.forEach(function (a) {
+          const amt = Number(a.amount) || 0;
+          const cashRate = a.productive ? Number(a.cashReturnRate) || 0 : 0;
+          const capRate = a.productive ? Number(a.capitalGrowthRate) || 0 : 0;
+
           if (a.category === 'Liquid') {
-            if (a.productive) liqProd += a.amount;
-            else liqNonProd += a.amount;
+            if (a.productive) {
+              liqProd += amt;
+              liqCashRet += (amt * cashRate) / 100;
+              liqCapGain += (amt * capRate) / 100;
+            } else {
+              liqNonProd += amt;
+            }
           } else {
-            if (a.productive) fixProd += a.amount;
-            else fixNonProd += a.amount;
+            if (a.productive) {
+              fixProd += amt;
+              fixCashRet += (amt * cashRate) / 100;
+              fixCapGain += (amt * capRate) / 100;
+            } else {
+              fixNonProd += amt;
+            }
           }
         });
 
         const dataValues = [liqProd, liqNonProd, fixProd, fixNonProd];
+        const sliceReturns = [
+          { cash: liqCashRet, cap: liqCapGain },
+          null,
+          { cash: fixCashRet, cap: fixCapGain },
+          null
+        ];
         const total = dataValues.reduce((s, v) => s + v, 0);
 
         if (instances.assetAllocation) {
@@ -96,7 +123,7 @@
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            cutout: '68%',
+            cutout: '66%',
             plugins: {
               legend: {
                 position: 'bottom',
@@ -104,7 +131,7 @@
                   usePointStyle: true,
                   pointStyle: 'circle',
                   boxWidth: 8,
-                  padding: 14,
+                  padding: 12,
                   font: { family: 'Inter, sans-serif', size: 11, weight: '500' },
                   color: '#475569'
                 }
@@ -116,6 +143,16 @@
                     const val = ctx.parsed || 0;
                     const pct = total > 0 ? ((val / total) * 100).toFixed(1) : '0.0';
                     return ' ' + ctx.label + ': $' + val.toLocaleString() + ' (' + pct + '%)';
+                  },
+                  afterLabel: function (ctx) {
+                    if (total === 0) return '';
+                    const sr = sliceReturns[ctx.dataIndex];
+                    if (!sr) return '';
+                    return [
+                      '   Cash Return: +$' + Math.round(sr.cash).toLocaleString() + '/yr',
+                      '   Capital Gain: +$' + Math.round(sr.cap).toLocaleString() + '/yr',
+                      '   Total Return: +$' + Math.round(sr.cash + sr.cap).toLocaleString() + '/yr'
+                    ];
                   }
                 }
               })
@@ -196,7 +233,7 @@
         });
       }
 
-      // 3. Productive Assets Annual Return Chart
+      // 3. Productive Assets Annual Return Chart (Split into Annual Cash Returns & Annual Capital Gain)
       const ctxYield = document.getElementById('chart-productive-yield');
       if (ctxYield) {
         if (instances.productiveYield) {
@@ -204,13 +241,27 @@
         }
 
         const prodAssets = assets
-          .filter((a) => a.productive && a.amount > 0)
-          .map((a) => ({
-            name: a.name.length > 22 ? a.name.slice(0, 20) + '…' : a.name,
-            annualReturn: (a.amount * a.returnRate) / 100,
-            rate: a.returnRate
-          }))
-          .sort((a, b) => b.annualReturn - a.annualReturn);
+          .filter((a) => a.productive && Number(a.amount) > 0)
+          .map((a) => {
+            const amt = Number(a.amount) || 0;
+            const cashRate = Number(a.cashReturnRate) || 0;
+            const capRate = Number(a.capitalGrowthRate) || 0;
+            const totalRate = cashRate + capRate;
+            const annualCashReturn = (amt * cashRate) / 100;
+            const annualCapitalGain = (amt * capRate) / 100;
+            const annualTotalReturn = annualCashReturn + annualCapitalGain;
+            return {
+              name: a.name.length > 20 ? a.name.slice(0, 18) + '…' : a.name,
+              fullName: a.name,
+              annualCashReturn,
+              annualCapitalGain,
+              annualTotalReturn,
+              cashRate,
+              capRate,
+              totalRate
+            };
+          })
+          .sort((a, b) => b.annualTotalReturn - a.annualTotalReturn);
 
         instances.productiveYield = new global.Chart(ctxYield, {
           type: 'bar',
@@ -218,11 +269,20 @@
             labels: prodAssets.length ? prodAssets.map((p) => p.name) : ['No Productive Assets'],
             datasets: [
               {
-                label: 'Expected Annual Return ($)',
-                data: prodAssets.length ? prodAssets.map((p) => p.annualReturn) : [0],
+                label: 'Annual Cash Return ($)',
+                data: prodAssets.length ? prodAssets.map((p) => Math.round(p.annualCashReturn)) : [0],
                 backgroundColor: '#10b981',
-                borderRadius: 6,
-                maxBarThickness: 26
+                stack: 'productiveReturns',
+                borderRadius: 4,
+                maxBarThickness: 24
+              },
+              {
+                label: 'Annual Capital Gain ($)',
+                data: prodAssets.length ? prodAssets.map((p) => Math.round(p.annualCapitalGain)) : [0],
+                backgroundColor: '#8b5cf6',
+                stack: 'productiveReturns',
+                borderRadius: 4,
+                maxBarThickness: 24
               }
             ]
           },
@@ -230,19 +290,57 @@
             indexAxis: 'y',
             responsive: true,
             maintainAspectRatio: false,
+            interaction: { mode: 'index', axis: 'y', intersect: false },
             plugins: {
-              legend: { display: false },
+              legend: {
+                display: true,
+                position: 'bottom',
+                labels: {
+                  usePointStyle: true,
+                  pointStyle: 'circle',
+                  boxWidth: 8,
+                  padding: 12,
+                  font: { family: 'Inter, sans-serif', size: 10, weight: '600' },
+                  color: '#475569'
+                }
+              },
               tooltip: Object.assign({}, TOOLTIP_STYLE, {
                 callbacks: {
+                  title: function (items) {
+                    if (!items || !items.length) return '';
+                    const item = prodAssets[items[0].dataIndex];
+                    return item ? item.fullName : items[0].label;
+                  },
                   label: function (ctx) {
                     const item = prodAssets[ctx.dataIndex];
                     if (!item) return ' $0';
+                    if (ctx.datasetIndex === 0) {
+                      return (
+                        ' Annual Cash Return: +$' +
+                        Math.round(item.annualCashReturn).toLocaleString() +
+                        '/yr (' +
+                        item.cashRate.toFixed(2) +
+                        '%)'
+                      );
+                    }
                     return (
-                      ' $' +
-                      Math.round(item.annualReturn).toLocaleString() +
+                      ' Annual Capital Gain: +$' +
+                      Math.round(item.annualCapitalGain).toLocaleString() +
                       '/yr (' +
-                      item.rate.toFixed(2) +
-                      '% yield)'
+                      item.capRate.toFixed(2) +
+                      '%)'
+                    );
+                  },
+                  footer: function (items) {
+                    if (!items || !items.length) return '';
+                    const item = prodAssets[items[0].dataIndex];
+                    if (!item) return '';
+                    return (
+                      'Total Return: +$' +
+                      Math.round(item.annualTotalReturn).toLocaleString() +
+                      '/yr (' +
+                      item.totalRate.toFixed(2) +
+                      '% Total)'
                     );
                   }
                 }
@@ -250,6 +348,7 @@
             },
             scales: {
               x: {
+                stacked: true,
                 beginAtZero: true,
                 ticks: {
                   callback: function (val) {
@@ -262,6 +361,7 @@
                 border: { display: false }
               },
               y: {
+                stacked: true,
                 ticks: {
                   font: { family: 'Inter, sans-serif', size: 11, weight: '500' },
                   color: '#334155'
@@ -385,7 +485,7 @@
         });
       }
 
-      // 2. Yearly Cashflows Breakdown
+      // 2. Yearly Cashflows Breakdown (Split Annual Cash Return & Annual Capital Gain)
       const ctxComp = document.getElementById('chart-cashflow-components');
       if (ctxComp) {
         if (instances.cashflowComponents) {
@@ -412,14 +512,14 @@
                 borderRadius: 2
               },
               {
-                label: 'Cash Return Yield ($)',
+                label: 'Annual Cash Return ($)',
                 data: rows.map((r) => Math.round(r.cashReturn)),
                 backgroundColor: '#10b981',
                 stack: 'cashflows',
                 borderRadius: 2
               },
               {
-                label: 'Capital Growth ($)',
+                label: 'Annual Capital Gain ($)',
                 data: rows.map((r) => Math.round(r.capitalGrowth)),
                 backgroundColor: '#8b5cf6',
                 stack: 'cashflows',
@@ -486,7 +586,7 @@
         });
       }
 
-      // 3. Yearly Inflows (Income + Pension), Portfolio Return & Spending Curve
+      // 3. Yearly Inflows, Split Annual Cash Return & Annual Capital Gain vs. Spending Curve
       const ctxIncSpend = document.getElementById('chart-income-vs-spending');
       if (ctxIncSpend) {
         if (instances.incomeVsSpending) {
@@ -518,14 +618,32 @@
                 pointRadius: 1.5
               },
               {
-                label: 'Cash Return + Capital Growth ($)',
-                data: rows.map((r) => Math.round(r.cashReturn + r.capitalGrowth)),
+                label: 'Annual Cash Return ($)',
+                data: rows.map((r) => Math.round(r.cashReturn)),
                 borderColor: '#10b981',
                 backgroundColor: 'transparent',
                 borderWidth: 2.2,
-                borderDash: [4, 3],
                 tension: 0.25,
                 pointRadius: 1.5
+              },
+              {
+                label: 'Annual Capital Gain ($)',
+                data: rows.map((r) => Math.round(r.capitalGrowth)),
+                borderColor: '#8b5cf6',
+                backgroundColor: 'transparent',
+                borderWidth: 2.2,
+                tension: 0.25,
+                pointRadius: 1.5
+              },
+              {
+                label: 'Total Portfolio Return ($)',
+                data: rows.map((r) => Math.round(r.cashReturn + r.capitalGrowth)),
+                borderColor: '#6366f1',
+                backgroundColor: 'transparent',
+                borderWidth: 1.8,
+                borderDash: [4, 3],
+                tension: 0.25,
+                pointRadius: 0
               }
             ]
           },
@@ -540,7 +658,7 @@
                   usePointStyle: true,
                   pointStyle: 'circle',
                   boxWidth: 8,
-                  font: { family: 'Inter, sans-serif', size: 11, weight: '500' },
+                  font: { family: 'Inter, sans-serif', size: 10, weight: '500' },
                   color: '#475569'
                 }
               },
