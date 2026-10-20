@@ -66,17 +66,20 @@
     const btnCf = document.getElementById('tab-btn-cashflow');
     const btnJumpLogs = document.getElementById('btn-jump-logs');
 
-    if (btnBs) {
+    if (btnBs && !btnBs.dataset.boundV13) {
+      btnBs.dataset.boundV13 = '1';
       btnBs.addEventListener('click', function () {
         switchTab('balance-sheet');
       });
     }
-    if (btnCf) {
+    if (btnCf && !btnCf.dataset.boundV13) {
+      btnCf.dataset.boundV13 = '1';
       btnCf.addEventListener('click', function () {
         switchTab('cashflow');
       });
     }
-    if (btnJumpLogs) {
+    if (btnJumpLogs && !btnJumpLogs.dataset.boundV13) {
+      btnJumpLogs.dataset.boundV13 = '1';
       btnJumpLogs.addEventListener('click', function () {
         const logSec = document.getElementById('runtime-log-section');
         if (logSec) {
@@ -88,7 +91,8 @@
 
     // Excel Backup (Export)
     const exportBtn = document.getElementById('btn-export-excel');
-    if (exportBtn) {
+    if (exportBtn && !exportBtn.dataset.boundV13) {
+      exportBtn.dataset.boundV13 = '1';
       exportBtn.addEventListener('click', function () {
         myFinance.Storage.exportToExcel();
       });
@@ -97,7 +101,8 @@
     // Excel Restore (Import)
     const importBtn = document.getElementById('btn-import-excel');
     const fileInput = document.getElementById('excel-file-input');
-    if (importBtn && fileInput) {
+    if (importBtn && fileInput && !importBtn.dataset.boundV13) {
+      importBtn.dataset.boundV13 = '1';
       importBtn.addEventListener('click', function () {
         fileInput.value = '';
         fileInput.click();
@@ -124,17 +129,20 @@
     const confirmResetDemoBtn = document.getElementById('btn-confirm-reset-demo');
     const confirmClearAllBtn = document.getElementById('btn-confirm-clear-all');
 
-    if (openResetModalBtn && resetModal) {
+    if (openResetModalBtn && resetModal && !openResetModalBtn.dataset.boundV13) {
+      openResetModalBtn.dataset.boundV13 = '1';
       openResetModalBtn.addEventListener('click', function () {
         resetModal.classList.remove('hidden');
       });
     }
-    if (cancelResetBtn && resetModal) {
+    if (cancelResetBtn && resetModal && !cancelResetBtn.dataset.boundV13) {
+      cancelResetBtn.dataset.boundV13 = '1';
       cancelResetBtn.addEventListener('click', function () {
         resetModal.classList.add('hidden');
       });
     }
-    if (confirmResetDemoBtn && resetModal) {
+    if (confirmResetDemoBtn && resetModal && !confirmResetDemoBtn.dataset.boundV13) {
+      confirmResetDemoBtn.dataset.boundV13 = '1';
       confirmResetDemoBtn.addEventListener('click', function () {
         myFinance.Storage.resetToDefault();
         if (myFinance.BalanceSheet) myFinance.BalanceSheet.refresh();
@@ -146,7 +154,8 @@
         showToast('Restored default demo portfolio data.', 'success');
       });
     }
-    if (confirmClearAllBtn && resetModal) {
+    if (confirmClearAllBtn && resetModal && !confirmClearAllBtn.dataset.boundV13) {
+      confirmClearAllBtn.dataset.boundV13 = '1';
       confirmClearAllBtn.addEventListener('click', function () {
         myFinance.Storage.clearAll();
         if (myFinance.BalanceSheet) myFinance.BalanceSheet.refresh();
@@ -160,22 +169,35 @@
     }
   }
 
-  
   function ensureAndroidShortcutIcons() {
     try {
-      // Register Service Worker on HTTP/HTTPS for Android PWA Home Screen Shortcut installation
-      if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.protocol === 'http:')) {
-        navigator.serviceWorker.register('./sw.js').then(function (reg) {
-          if (myFinance.Logger) {
-            myFinance.Logger.info('App', 'PWA Service Worker registered for Android Home Screen shortcut support.', {
-              scope: reg.scope
-            });
-          }
-        }).catch(function (err) {
-          if (myFinance.Logger) {
-            myFinance.Logger.debug('App', 'Service Worker registration skipped: ' + err.message);
-          }
+      if ('caches' in global) {
+        global.caches.keys().then(function (keys) {
+          keys.forEach(function (k) {
+            if (k !== 'myfinance-pwa-v5-20261020') {
+              global.caches.delete(k);
+            }
+          });
         });
+      }
+      if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.protocol === 'http:')) {
+        navigator.serviceWorker
+          .register('./sw.js?v=20261020_1235', { updateViaCache: 'none' })
+          .then(function (reg) {
+            if (reg && typeof reg.update === 'function') {
+              reg.update();
+            }
+            if (myFinance.Logger) {
+              myFinance.Logger.info('App', 'PWA Service Worker registered with cache-busting update check.', {
+                scope: reg.scope
+              });
+            }
+          })
+          .catch(function (err) {
+            if (myFinance.Logger) {
+              myFinance.Logger.debug('App', 'Service Worker registration skipped: ' + err.message);
+            }
+          });
       }
     } catch (e) {}
   }
@@ -189,7 +211,7 @@
       bindGlobalControls();
       ensureAndroidShortcutIcons();
       myFinance.Logger.info('App', 'PWA shortcut & bookmark icons configured (Android Web App Manifest, Apple Touch Icon, PC SVG/ICO favicons).');
-      myFinance.Logger.info('App', 'myFinance web application ready.', {
+      myFinance.Logger.info('App', 'myFinance web application v1.3.0 ready.', {
         activeTab: activeTab
       });
     } catch (err) {
@@ -208,6 +230,7 @@
   }
 
   myFinance.App = {
+    _version: '1.3.0',
     switchTab: switchTab,
     showToast: showToast
   };

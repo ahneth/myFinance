@@ -1,8 +1,9 @@
 /**
  * myFinance - Service Worker (sw.js)
  * Enables PWA installation & reliable Android Home Screen shortcut icons.
+ * Uses network-first with cache-busting reload to prevent serving stale JS modules.
  */
-const CACHE_NAME = 'myfinance-pwa-v4';
+const CACHE_NAME = 'myfinance-pwa-v5-20261020';
 const ASSETS = [
   './',
   'index.html',
@@ -48,8 +49,18 @@ self.addEventListener('activate', function (event) {
 self.addEventListener('fetch', function (event) {
   if (event.request.method !== 'GET') return;
   event.respondWith(
-    fetch(event.request).catch(function () {
-      return caches.match(event.request);
-    })
+    fetch(event.request, { cache: 'no-store' })
+      .then(function (response) {
+        if (response && response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(function (cache) {
+            cache.put(event.request, clone);
+          });
+        }
+        return response;
+      })
+      .catch(function () {
+        return caches.match(event.request);
+      })
   );
 });

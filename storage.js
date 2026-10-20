@@ -10,93 +10,98 @@
 
   const myFinance = (global.myFinance = global.myFinance || {});
   const STORAGE_KEY = 'myFinance_app_state_v1';
+  const CURRENT_VERSION = '1.3.0';
+
+  const DEFAULT_STARTER_ASSETS = [
+    {
+      id: 'ast_1',
+      name: 'High-Yield Savings Account',
+      category: 'Liquid',
+      amount: 45000,
+      productive: true,
+      cashReturnRate: 4.2,
+      capitalGrowthRate: 0.0,
+      totalReturnRate: 4.2,
+      returnRate: 4.2
+    },
+    {
+      id: 'ast_2',
+      name: 'Checking & Emergency Cash',
+      category: 'Liquid',
+      amount: 15000,
+      productive: false,
+      cashReturnRate: 0.0,
+      capitalGrowthRate: 0.0,
+      totalReturnRate: 0.0,
+      returnRate: 0.0
+    },
+    {
+      id: 'ast_3',
+      name: 'Global Equity Index ETF Portfolio',
+      category: 'Liquid',
+      amount: 185000,
+      productive: true,
+      cashReturnRate: 2.0,
+      capitalGrowthRate: 6.0,
+      totalReturnRate: 8.0,
+      returnRate: 8.0
+    },
+    {
+      id: 'ast_4',
+      name: 'Short-Term Treasury Bills',
+      category: 'Liquid',
+      amount: 35000,
+      productive: true,
+      cashReturnRate: 4.8,
+      capitalGrowthRate: 0.0,
+      totalReturnRate: 4.8,
+      returnRate: 4.8
+    },
+    {
+      id: 'ast_5',
+      name: 'Primary Residence Property',
+      category: 'Fixed',
+      amount: 620000,
+      productive: false,
+      cashReturnRate: 0.0,
+      capitalGrowthRate: 0.0,
+      totalReturnRate: 0.0,
+      returnRate: 0.0
+    },
+    {
+      id: 'ast_6',
+      name: 'Retirement Pension / MPF / 401(k)',
+      category: 'Fixed',
+      amount: 210000,
+      productive: true,
+      cashReturnRate: 1.5,
+      capitalGrowthRate: 5.0,
+      totalReturnRate: 6.5,
+      returnRate: 6.5
+    },
+    {
+      id: 'ast_7',
+      name: 'Rental Investment Apartment',
+      category: 'Fixed',
+      amount: 340000,
+      productive: true,
+      cashReturnRate: 3.2,
+      capitalGrowthRate: 2.2,
+      totalReturnRate: 5.4,
+      returnRate: 5.4
+    }
+  ];
 
   function getDefaultState() {
     return {
       meta: {
         appName: 'myFinance',
-        version: '1.2.0',
+        version: CURRENT_VERSION,
         lastUpdated: new Date().toISOString()
       },
-      assets: [
-        {
-          id: 'ast_1',
-          name: 'High-Yield Savings Account',
-          category: 'Liquid',
-          amount: 45000,
-          productive: true,
-          cashReturnRate: 4.2,
-          capitalGrowthRate: 0.0,
-          totalReturnRate: 4.2,
-          returnRate: 4.2
-        },
-        {
-          id: 'ast_2',
-          name: 'Checking & Emergency Cash',
-          category: 'Liquid',
-          amount: 15000,
-          productive: false,
-          cashReturnRate: 0.0,
-          capitalGrowthRate: 0.0,
-          totalReturnRate: 0.0,
-          returnRate: 0.0
-        },
-        {
-          id: 'ast_3',
-          name: 'Global Equity Index ETF Portfolio',
-          category: 'Liquid',
-          amount: 185000,
-          productive: true,
-          cashReturnRate: 2.0,
-          capitalGrowthRate: 6.0,
-          totalReturnRate: 8.0,
-          returnRate: 8.0
-        },
-        {
-          id: 'ast_4',
-          name: 'Short-Term Treasury Bills',
-          category: 'Liquid',
-          amount: 35000,
-          productive: true,
-          cashReturnRate: 4.8,
-          capitalGrowthRate: 0.0,
-          totalReturnRate: 4.8,
-          returnRate: 4.8
-        },
-        {
-          id: 'ast_5',
-          name: 'Primary Residence Property',
-          category: 'Fixed',
-          amount: 620000,
-          productive: false,
-          cashReturnRate: 0.0,
-          capitalGrowthRate: 0.0,
-          totalReturnRate: 0.0,
-          returnRate: 0.0
-        },
-        {
-          id: 'ast_6',
-          name: 'Retirement Pension / MPF / 401(k)',
-          category: 'Fixed',
-          amount: 210000,
-          productive: true,
-          cashReturnRate: 1.5,
-          capitalGrowthRate: 5.0,
-          totalReturnRate: 6.5,
-          returnRate: 6.5
-        },
-        {
-          id: 'ast_7',
-          name: 'Rental Investment Apartment',
-          category: 'Fixed',
-          amount: 340000,
-          productive: true,
-          cashReturnRate: 3.2,
-          capitalGrowthRate: 2.2,
-          totalReturnRate: 5.4,
-          returnRate: 5.4
-        }
-      ],
+      assets: DEFAULT_STARTER_ASSETS.map(function (a) {
+        return Object.assign({}, a);
+      }),
       liabilities: [
         {
           id: 'lib_1',
@@ -159,6 +164,8 @@
       String(prodRaw).toLowerCase() === 'yes' ||
       String(prodRaw) === '1';
     const amount = Math.max(0, parseFloat(raw.amount !== undefined ? raw.amount : raw.Amount) || 0);
+    const idStr = String(raw.id || raw.ID || 'ast_' + Date.now() + '_' + idx);
+    const nameStr = String(raw.name || raw.Name || 'Unnamed Asset').trim();
 
     const hasSplitCash =
       raw.cashReturnRate !== undefined ||
@@ -189,6 +196,20 @@
             ? raw['Yearly Capital Growth Rate (%)']
             : raw['Capital Growth Rate (%)']
         ) || 0;
+
+      // If migrating an asset whose capitalGrowthRate was 0 because of a legacy single-rate import, check starter match
+      if (capitalGrowthRate === 0 && cashReturnRate > 0) {
+        const starterMatch = DEFAULT_STARTER_ASSETS.find(
+          (d) =>
+            (d.id === idStr || d.name.toLowerCase() === nameStr.toLowerCase()) &&
+            d.capitalGrowthRate > 0 &&
+            Math.abs(d.returnRate - cashReturnRate) < 0.01
+        );
+        if (starterMatch) {
+          cashReturnRate = starterMatch.cashReturnRate;
+          capitalGrowthRate = starterMatch.capitalGrowthRate;
+        }
+      }
     } else {
       const legacyRate =
         parseFloat(
@@ -203,9 +224,10 @@
             : 0
         ) || 0;
 
-      // Check if this matches a default starter asset ID to preserve realistic cash vs. capital split on upgrade
-      const defaultMatch = getDefaultState().assets.find(
-        (d) => d.id === String(raw.id || raw.ID || '') && Math.abs(d.returnRate - legacyRate) < 0.01
+      const defaultMatch = DEFAULT_STARTER_ASSETS.find(
+        (d) =>
+          (d.id === idStr || d.name.toLowerCase() === nameStr.toLowerCase()) &&
+          Math.abs(d.returnRate - legacyRate) < 0.01
       );
       if (defaultMatch) {
         cashReturnRate = defaultMatch.cashReturnRate;
@@ -224,8 +246,8 @@
     const totalReturnRate = Number((cashReturnRate + capitalGrowthRate).toFixed(4));
 
     return {
-      id: String(raw.id || raw.ID || 'ast_' + Date.now() + '_' + idx),
-      name: String(raw.name || raw.Name || 'Unnamed Asset').trim(),
+      id: idStr,
+      name: nameStr,
       category: category,
       amount: amount,
       productive: productive,
@@ -316,7 +338,7 @@
       appState = {
         meta: {
           appName: 'myFinance',
-          version: '1.2.0',
+          version: CURRENT_VERSION,
           lastUpdated: (parsed.meta && parsed.meta.lastUpdated) || new Date().toISOString()
         },
         assets: Array.isArray(parsed.assets) ? parsed.assets.map(sanitizeAsset) : getDefaultState().assets,
@@ -325,7 +347,9 @@
           : getDefaultState().liabilities,
         cashflowParams: sanitizeCashflowParams(parsed.cashflowParams)
       };
+      saveToLocalStorage();
       myFinance.Logger.info('Storage', 'Loaded state from device localStorage.', {
+        version: CURRENT_VERSION,
         assetsCount: appState.assets.length,
         liabilitiesCount: appState.liabilities.length,
         lastUpdated: appState.meta.lastUpdated
@@ -340,6 +364,7 @@
   }
 
   function saveToLocalStorage() {
+    appState.meta.version = CURRENT_VERSION;
     appState.meta.lastUpdated = new Date().toISOString();
     try {
       global.localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
@@ -611,6 +636,7 @@
   }
 
   myFinance.Storage = {
+    _version: CURRENT_VERSION,
     init: function () {
       return loadFromLocalStorage();
     },
