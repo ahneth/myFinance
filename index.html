@@ -37,7 +37,9 @@
         var dynManifest = {
           name: "myFinance — Executive Wealth & Cashflow Suite",
           short_name: "myFinance",
+          id: "./",
           start_url: window.location.href.split('#')[0],
+          scope: window.location.href.split('#')[0].split('?')[0].replace(/[^/]*$/, ''),
           display: "standalone",
           background_color: "#171542",
           theme_color: "#171542",

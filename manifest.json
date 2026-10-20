@@ -1,6 +1,9 @@
 {
-  "name": "myFinance \u2014 Executive Wealth & Cashflow Suite",
+  "name": "myFinance — Executive Wealth & Cashflow Suite",
   "short_name": "myFinance",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#171542",
